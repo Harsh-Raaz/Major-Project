@@ -81,6 +81,7 @@ router.post('/recommend-doctors', async (req, res) => {
     const doctorData = doctors.map((d) => ({
       _id: d._id,
       name: d.name,
+      department: d.department,
       rating: d.rating,
       experience_years: d.experience_years,
       current_patients_today: d.current_patients_today,
