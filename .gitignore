@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Data files
+*.csv
+*.zip
+data/raw/
+data/processed/
+
+# Environment
+.env
+venv/
+env/
+
+# Node
+node_modules/
