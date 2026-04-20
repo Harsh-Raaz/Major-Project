@@ -31,7 +31,7 @@ def _month_name_to_num(name):
 
 
 def _load_indian_diseases():
-    path = DATA_DIR / "indian_diseases.csv"
+    path = DATA_DIR / "processed" / "diseases_clean.csv"
     if not path.exists():
         path = RAW_DIR / "indian_diseases.csv"
     if not path.exists():
@@ -63,7 +63,9 @@ def _load_indian_diseases():
 
 
 def _load_appointment_patterns():
-    path = RAW_DIR / "appointments.csv"
+    path = DATA_DIR / "processed" / "appointments_clean.csv"
+    if not path.exists():
+        path = RAW_DIR / "appointments.csv"
     if not path.exists():
         return []
     df = pd.read_csv(path)
@@ -114,7 +116,9 @@ def _load_appointment_patterns():
 
 
 def _load_doctor_benchmarks():
-    path = RAW_DIR / "doctors.csv"
+    path = DATA_DIR / "processed" / "doctors_clean.csv"
+    if not path.exists():
+        path = RAW_DIR / "doctors.csv"
     if not path.exists():
         return {}
     df = pd.read_csv(path)
@@ -130,7 +134,9 @@ def _load_doctor_benchmarks():
 
 
 def _load_reference_slot_capacity() -> int:
-    path = RAW_DIR / "hospitals_beds_statewise.csv"
+    path = DATA_DIR / "processed" / "beds_clean.csv"
+    if not path.exists():
+        path = RAW_DIR / "hospitals_beds_statewise.csv"
     if not path.exists():
         return 5
     df = pd.read_csv(path, header=0)
