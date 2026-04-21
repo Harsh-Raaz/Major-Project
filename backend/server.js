@@ -23,6 +23,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Hospital API running' });
 });
 
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/hospitals', require('./routes/hospitals'));
 app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/slots', require('./routes/slots'));
