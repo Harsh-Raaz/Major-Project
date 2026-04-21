@@ -17,7 +17,6 @@ import SearchHistory from "./pages/SearchHistory";
 import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AppLayout from "./layouts/AppLayout";
 
 export default function RootApp() {
   return (
@@ -25,22 +24,20 @@ export default function RootApp() {
       <Toaster position="top-right" />
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<AppLayout><Home /></AppLayout>} />
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/hospitals" element={<AppLayout><Hospitals /></AppLayout>} />
-        <Route path="/doctors/:id" element={<AppLayout><Doctors /></AppLayout>} />
-        <Route path="/slots/:id" element={<AppLayout><Slots /></AppLayout>} />
-        <Route path="/route/:id" element={<AppLayout><RoutePage /></AppLayout>} />
+        <Route path="/hospitals" element={<Hospitals />} />
+        <Route path="/doctors/:id" element={<Doctors />} />
+        <Route path="/slots/:id" element={<Slots />} />
+        <Route path="/route/:id" element={<RoutePage />} />
 
         {/* Protected Routes */}
         <Route
           path="/booking"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Booking />
-              </AppLayout>
+              <Booking />
             </ProtectedRoute>
           }
         />
@@ -48,9 +45,7 @@ export default function RootApp() {
           path="/confirm"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Confirmation />
-              </AppLayout>
+              <Confirmation />
             </ProtectedRoute>
           }
         />
@@ -58,9 +53,7 @@ export default function RootApp() {
           path="/dashboard"
           element={
             <ProtectedRoute requireRole="patient">
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -68,9 +61,7 @@ export default function RootApp() {
           path="/profile"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Profile />
-              </AppLayout>
+              <Profile />
             </ProtectedRoute>
           }
         />
@@ -78,9 +69,7 @@ export default function RootApp() {
           path="/waitlist"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Waitlist />
-              </AppLayout>
+              <Waitlist />
             </ProtectedRoute>
           }
         />
@@ -88,9 +77,7 @@ export default function RootApp() {
           path="/search-history"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <SearchHistory />
-              </AppLayout>
+              <SearchHistory />
             </ProtectedRoute>
           }
         />
@@ -98,9 +85,7 @@ export default function RootApp() {
           path="/reviews"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Reviews />
-              </AppLayout>
+              <Reviews />
             </ProtectedRoute>
           }
         />
@@ -108,9 +93,7 @@ export default function RootApp() {
           path="/notifications"
           element={
             <ProtectedRoute>
-              <AppLayout>
-                <Notifications />
-              </AppLayout>
+              <Notifications />
             </ProtectedRoute>
           }
         />
@@ -118,9 +101,7 @@ export default function RootApp() {
           path="/admin"
           element={
             <ProtectedRoute requireRole="admin">
-              <AppLayout>
-                <Admin />
-              </AppLayout>
+              <Admin />
             </ProtectedRoute>
           }
         />

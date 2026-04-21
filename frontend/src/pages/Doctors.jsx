@@ -25,13 +25,21 @@ export default function Doctors() {
         const res = await getHospitalDepartments(id);
         const values = res.data?.departments || res.data || [];
         setDepartments(values);
-        if (!selectedDept && values.length > 0) setSelectedDept(values[0]?.name || values[0]);
+        if (!initialDepartment && values.length > 0) {
+          setSelectedDept(values[0]?.name || values[0]);
+        }
       } catch {
         toast.error("Failed loading departments");
       }
     };
     loadDepartments();
-  }, [id, selectedDept]);
+  }, [id, initialDepartment]);
+
+  useEffect(() => {
+    if (initialDepartment) {
+      setSelectedDept(initialDepartment);
+    }
+  }, [initialDepartment]);
 
   useEffect(() => {
     if (!selectedDept) return;

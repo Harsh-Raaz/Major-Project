@@ -1,48 +1,81 @@
-// Token management
-export const getToken = () => localStorage.getItem('authToken');
-export const setToken = (token) => localStorage.setItem('authToken', token);
-export const clearToken = () => localStorage.removeItem('authToken');
+const TOKEN_KEY = 'authToken';
+const USER_KEY = 'authUser';
+const PATIENT_KEY = 'currentPatient';
+const SEARCH_HISTORY_KEY = 'searchHistory';
 
-// User management
-export const getUser = () => {
-  const user = localStorage.getItem('authUser');
-  return user ? JSON.parse(user) : null;
+const parseJson = (value, fallback = null) => {
+  if (!value) return fallback;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
 };
 
-export const setUser = (user) => localStorage.setItem('authUser', JSON.stringify(user));
-export const clearUser = () => localStorage.removeItem('authUser');
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
 
-// Patient management
-export const getPatient = () => {
-  const patient = localStorage.getItem('currentPatient');
-  return patient ? JSON.parse(patient) : null;
+export const setToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
 };
+
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+export const getUser = () => parseJson(localStorage.getItem(USER_KEY));
+
+export const setUser = (user) => {
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
+};
+
+export const clearUser = () => localStorage.removeItem(USER_KEY);
+
+export const getPatient = () => parseJson(localStorage.getItem(PATIENT_KEY));
 
 export const setPatient = (patient) => {
-  if (patient) localStorage.setItem('currentPatient', JSON.stringify(patient));
+  if (patient) {
+    localStorage.setItem(PATIENT_KEY, JSON.stringify(patient));
+  } else {
+    localStorage.removeItem(PATIENT_KEY);
+  }
 };
 
-export const clearPatient = () => localStorage.removeItem('currentPatient');
+export const clearPatient = () => localStorage.removeItem(PATIENT_KEY);
 
-// Search history
-export const getSearchHistory = () => {
-  const history = localStorage.getItem('searchHistory');
-  return history ? JSON.parse(history) : [];
-};
+export const getSearchHistory = () =>
+  parseJson(localStorage.getItem(SEARCH_HISTORY_KEY), []);
 
 export const addToSearchHistory = (item) => {
-  const history = getSearchHistory();
-  const exists = history.some(h => h.id === item.id);
-  if (!exists) {
-    history.unshift(item);
-    if (history.length > 20) history.pop();
-  }
-  localStorage.setItem('searchHistory', JSON.stringify(history));
+  if (!item) return;
+
+  const normalizedItem = {
+    ...item,
+    id: item.id || item._id,
+    timestamp: item.timestamp || new Date().toISOString(),
+  };
+  const history = getSearchHistory().filter(
+    (entry) =>
+      (entry.id || entry._id) !== normalizedItem.id ||
+      entry.type !== normalizedItem.type
+  );
+
+  history.unshift(normalizedItem);
+  localStorage.setItem(
+    SEARCH_HISTORY_KEY,
+    JSON.stringify(history.slice(0, 20))
+  );
 };
 
-export const clearSearchHistory = () => localStorage.removeItem('searchHistory');
+export const clearSearchHistory = () =>
+  localStorage.removeItem(SEARCH_HISTORY_KEY);
 
-// Clear all auth data on logout
 export const clearAllAuthData = () => {
   clearToken();
   clearUser();

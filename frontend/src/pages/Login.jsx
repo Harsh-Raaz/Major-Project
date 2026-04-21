@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
-import { validateEmail } from '../utils/validation';
+import { validateLoginForm } from '../utils/validation';
 import Loader from '../components/Loader';
 
 export default function Login() {
@@ -13,24 +13,13 @@ export default function Login() {
   const [errors, setErrors] = useState({});
 
   const validate = () => {
-    const newErrors = {};
-
-    if (!form.email) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(form.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-
-    if (!form.password) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const nextErrors = validateLoginForm(form);
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (event) => {
+    event.preventDefault();
 
     if (!validate()) return;
 
@@ -55,37 +44,49 @@ export default function Login() {
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-blue-900">Email</label>
+            <label className="block text-sm font-semibold text-blue-900">
+              Email
+            </label>
             <input
               type="email"
               value={form.email}
-              onChange={(e) => {
-                setForm({ ...form, email: e.target.value });
+              onChange={(event) => {
+                setForm({ ...form, email: event.target.value });
                 if (errors.email) setErrors({ ...errors, email: '' });
               }}
               className={`mt-2 w-full rounded-lg border px-4 py-2 outline-none ring-blue-300 focus:ring-2 ${
-                errors.email ? 'border-red-300 bg-red-50' : 'border-blue-200 bg-white'
+                errors.email
+                  ? 'border-red-300 bg-red-50'
+                  : 'border-blue-200 bg-white'
               }`}
               placeholder="your@email.com"
             />
-            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-blue-900">Password</label>
+            <label className="block text-sm font-semibold text-blue-900">
+              Password
+            </label>
             <input
               type="password"
               value={form.password}
-              onChange={(e) => {
-                setForm({ ...form, password: e.target.value });
+              onChange={(event) => {
+                setForm({ ...form, password: event.target.value });
                 if (errors.password) setErrors({ ...errors, password: '' });
               }}
               className={`mt-2 w-full rounded-lg border px-4 py-2 outline-none ring-blue-300 focus:ring-2 ${
-                errors.password ? 'border-red-300 bg-red-50' : 'border-blue-200 bg-white'
+                errors.password
+                  ? 'border-red-300 bg-red-50'
+                  : 'border-blue-200 bg-white'
               }`}
-              placeholder="••••••••"
+              placeholder="********"
             />
-            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+            )}
           </div>
 
           <button

@@ -1,6 +1,6 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import { authRegister, authLogin, authGetMe } from '../api/auth';
-import { getToken, setToken, clearToken, getUser, setUser, clearUser, clearAllAuthData } from '../utils/storage';
+import { clearAllAuthData, getToken, setToken, setUser } from '../utils/storage';
 
 export const AuthContext = createContext();
 
@@ -12,17 +12,24 @@ export function AuthProvider({ children }) {
   // Check if user is authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const savedToken = getToken();
-        const savedUser = getUser();
+      const savedToken = getToken();
 
-        if (savedToken && savedUser) {
-          setTokenState(savedToken);
-          setUserState(savedUser);
-        }
+      if (!savedToken) {
+        clearAllAuthData();
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setTokenState(savedToken);
+        const res = await authGetMe();
+        setUser(res.data);
+        setUserState(res.data);
       } catch (error) {
         console.error('Auth check failed:', error);
         clearAllAuthData();
+        setTokenState(null);
+        setUserState(null);
       } finally {
         setLoading(false);
       }

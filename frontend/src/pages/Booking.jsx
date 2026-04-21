@@ -6,7 +6,8 @@ import Loader from "../components/Loader";
 import { classifyPriority } from "../api/ai";
 import { createAppointment } from "../api/appointment";
 import { registerPatient } from "../api/patient";
-import { fallbackPriority } from "../utils/helpers";
+import { fallbackPriority, formatPatient } from "../utils/helpers";
+import { setPatient } from "../utils/storage";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -27,6 +28,7 @@ export default function Booking() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (!doctorId || !slotId || !hospitalId) return toast.error("Missing booking details. Please choose doctor and slot again.");
     if (!form.name || !form.age || !form.phone || !form.location) return toast.error("Please fill required fields");
     if (!/^\d{10}$/.test(form.phone)) return toast.error("Phone must be 10 digits");
     if (Number(form.age) < 1 || Number(form.age) > 120) return toast.error("Age must be between 1 and 120");
@@ -40,7 +42,14 @@ export default function Booking() {
         priority = localPriority;
       }
       const patientRes = await registerPatient(form);
-      const patientId = patientRes.data?.id || patientRes.data?.patient_id || patientRes.data?.patient?.id;
+      const patientData = formatPatient(patientRes.data?.patient || null);
+      const patientId =
+        patientRes.data?.patient?.id ||
+        patientRes.data?.patient?._id ||
+        patientRes.data?.id ||
+        patientRes.data?.patient_id;
+      if (!patientId) throw new Error("Patient registration failed");
+      if (patientData) setPatient(patientData);
       await createAppointment({
         patient_id: patientId,
         doctor_id: doctorId,
