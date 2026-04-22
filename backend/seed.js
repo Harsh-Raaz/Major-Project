@@ -86,7 +86,7 @@ async function seed() {
         rating: 4.8,
         avg_consultation_mins: 12,
         max_patients_per_day: 40,
-        current_patients_today: 8,
+        current_patients_today: 0,
         qualification: 'MBBS, MD',
         bio: 'Specialist in tropical diseases and dengue treatment'
       },
@@ -99,7 +99,7 @@ async function seed() {
         rating: 4.2,
         avg_consultation_mins: 10,
         max_patients_per_day: 40,
-        current_patients_today: 4,
+        current_patients_today: 0,
         qualification: 'MBBS',
         bio: 'General physician with focus on outpatient care'
       },
@@ -112,7 +112,7 @@ async function seed() {
         rating: 4.9,
         avg_consultation_mins: 15,
         max_patients_per_day: 30,
-        current_patients_today: 22,
+        current_patients_today: 0,
         qualification: 'MBBS, MD, DM Cardiology',
         bio: 'Senior cardiologist with 20 years experience'
       },
@@ -125,7 +125,7 @@ async function seed() {
         rating: 4.5,
         avg_consultation_mins: 12,
         max_patients_per_day: 35,
-        current_patients_today: 12,
+        current_patients_today: 0,
         qualification: 'MBBS, MD Pediatrics',
         bio: 'Child specialist with expertise in infectious diseases'
       }
