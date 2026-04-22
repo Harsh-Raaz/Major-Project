@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import AppLayout from "../layouts/AppLayout";
 import Loader from "../components/Loader";
 import { classifyPriority } from "../api/ai";
 import { createAppointment } from "../api/appointment";
 import { registerPatient } from "../api/patient";
-import { fallbackPriority, formatPatient } from "../utils/helpers";
+import { fallbackPriority } from "../utils/helpers";
 import { setPatient } from "../utils/storage";
 
 export default function Booking() {
@@ -42,12 +41,12 @@ export default function Booking() {
         priority = localPriority;
       }
       const patientRes = await registerPatient(form);
-      const patientData = formatPatient(patientRes.data?.patient || null);
+      const patientData = patientRes.data?.patient || null;
       const patientId =
-        patientRes.data?.patient?.id ||
-        patientRes.data?.patient?._id ||
         patientRes.data?.id ||
-        patientRes.data?.patient_id;
+        patientRes.data?.patient_id ||
+        patientRes.data?.patient?.id ||
+        patientRes.data?.patient?._id;
       if (!patientId) throw new Error("Patient registration failed");
       if (patientData) setPatient(patientData);
       await createAppointment({
@@ -72,7 +71,7 @@ export default function Booking() {
   };
 
   return (
-    <AppLayout>
+    <>
       <h2 className="text-2xl font-bold">Patient Booking</h2>
       <form onSubmit={onSubmit} className="mt-6 grid max-w-2xl gap-4 rounded-2xl border border-blue-100 bg-white p-6">
         <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Full Name*" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -85,7 +84,7 @@ export default function Booking() {
         <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Address*" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
         <button className="rounded-lg bg-blue-600 px-4 py-2 text-white">{loading ? <Loader small /> : "Book Appointment"}</button>
       </form>
-    </AppLayout>
+    </>
   );
 }
 
