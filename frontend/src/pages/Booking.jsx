@@ -27,7 +27,10 @@ export default function Booking() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!doctorId || !slotId || !hospitalId) return toast.error("Missing booking details. Please choose doctor and slot again.");
+    console.log("Submitting:", { doctorId, slotId, hospitalId, department });
+    if (!doctorId || !slotId || !hospitalId || hospitalId === "null" || hospitalId === "undefined") {
+      return toast.error("Missing booking details. Please go back and select doctor again.");
+    }
     if (!form.name || !form.age || !form.phone || !form.location) return toast.error("Please fill required fields");
     if (!/^\d{10}$/.test(form.phone)) return toast.error("Phone must be 10 digits");
     if (Number(form.age) < 1 || Number(form.age) > 120) return toast.error("Age must be between 1 and 120");
@@ -40,8 +43,13 @@ export default function Booking() {
       } catch {
         priority = localPriority;
       }
-      const patientRes = await registerPatient(form);
-      const patientData = patientRes.data?.patient || null;
+      const patientRes = await registerPatient({
+        ...form,
+        location: {
+          address: form.location,
+        },
+      });
+      const patientData = formatPatient(patientRes.data?.patient || null);
       const patientId =
         patientRes.data?.id ||
         patientRes.data?.patient_id ||
@@ -63,8 +71,8 @@ export default function Booking() {
           time,
         )}&wait=${wait}&hospitalId=${hospitalId}`,
       );
-    } catch {
-      toast.error("Booking failed");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
     }

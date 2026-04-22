@@ -2,11 +2,11 @@ import axios from 'axios';
 import { clearAllAuthData, getToken } from '../utils/storage';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });
 
 export const aiDirectApi = axios.create({
-  baseURL: 'http://localhost:5001',
+  baseURL: import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:5001',
 });
 
 const attachToken = (client) => {

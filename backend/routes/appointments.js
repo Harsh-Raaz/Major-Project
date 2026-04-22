@@ -22,6 +22,11 @@ function updateSlotStatus(slot) {
   return slot;
 }
 
+function normalizePriority(priority) {
+  const value = String(priority || 'normal').toLowerCase();
+  return ['normal', 'urgent', 'emergency'].includes(value) ? value : 'normal';
+}
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -37,6 +42,12 @@ router.post('/', async (req, res) => {
     const slot = await Slot.findById(slot_id);
     if (!slot) {
       return res.status(404).json({ message: 'Slot not found' });
+    }
+    if (String(slot.doctor_id) !== String(doctor_id)) {
+      return res.status(400).json({ message: 'Selected slot does not belong to this doctor' });
+    }
+    if (String(slot.hospital_id) !== String(hospital_id)) {
+      return res.status(400).json({ message: 'Selected slot does not belong to this hospital' });
     }
     if (slot.status === 'full') {
       return res.status(400).json({
@@ -71,7 +82,7 @@ router.post('/', async (req, res) => {
       hospital_id,
       department,
       symptoms,
-      priority,
+      priority: normalizePriority(priority),
       estimated_wait_mins: estimatedWait
     });
     await appointment.save();

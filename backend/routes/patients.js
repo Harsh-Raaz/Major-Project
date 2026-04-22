@@ -5,6 +5,8 @@ const Patient = require('../models/Patient');
 router.post('/register', async (req, res) => {
   try {
     const { name, age, gender, phone, email, location } = req.body;
+    const normalizedLocation =
+      typeof location === 'string' ? { address: location } : location;
     const existing = await Patient.findOne({ phone });
     if (existing) {
       return res.json({
@@ -18,7 +20,7 @@ router.post('/register', async (req, res) => {
       gender,
       phone,
       email,
-      location
+      location: normalizedLocation
     });
     await patient.save();
     res.status(201).json({
