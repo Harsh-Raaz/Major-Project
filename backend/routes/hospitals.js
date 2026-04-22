@@ -4,7 +4,7 @@ const Hospital = require('../models/Hospital');
 
 router.get('/', async (req, res) => {
   try {
-    const hospitals = await Hospital.find({ is_active: true });
+    const hospitals = await Hospital.find();
     res.json(hospitals);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -32,10 +32,7 @@ router.post('/compare', async (req, res) => {
           date: today,
           status: { $ne: 'full' }
         });
-        const availableDoctors = await Doctor.find({
-          hospital_id: hospitalId,
-          available: true
-        });
+        const availableDoctors = await Doctor.find({ hospital_id: hospitalId });
         const avgDoctorRating =
           availableDoctors.length > 0
             ? availableDoctors.reduce((s, d) => s + (d.rating || 0), 0) /

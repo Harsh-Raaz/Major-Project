@@ -1,7 +1,7 @@
 import { scoreClass, starText } from "../utils/helpers";
 
 export default function HospitalCard({ hospital, recommended, checked, onToggleCompare, onViewDoctors, onRoute }) {
-  const id = hospital.id || hospital._id;
+  const id = hospital._id || hospital.id;
   return (
     <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">

@@ -81,6 +81,7 @@ async function seed() {
         name: 'Dr. Priya Sharma',
         hospital_id: hospitals[0]._id,
         department: 'General Medicine',
+        available: true,
         experience_years: 15,
         rating: 4.8,
         avg_consultation_mins: 12,
@@ -93,6 +94,7 @@ async function seed() {
         name: 'Dr. Ramesh Rao',
         hospital_id: hospitals[0]._id,
         department: 'General Medicine',
+        available: true,
         experience_years: 5,
         rating: 4.2,
         avg_consultation_mins: 10,
@@ -105,6 +107,7 @@ async function seed() {
         name: 'Dr. Meena Iyer',
         hospital_id: hospitals[1]._id,
         department: 'Cardiology',
+        available: true,
         experience_years: 20,
         rating: 4.9,
         avg_consultation_mins: 15,
@@ -117,6 +120,7 @@ async function seed() {
         name: 'Dr. Suresh Kumar',
         hospital_id: hospitals[2]._id,
         department: 'Pediatrics',
+        available: true,
         experience_years: 10,
         rating: 4.5,
         avg_consultation_mins: 12,
@@ -127,70 +131,44 @@ async function seed() {
       }
     ]);
 
-    const today = new Date().toISOString().split('T')[0];
+    const timeSlots = [
+      { start: '09:00', end: '10:00' },
+      { start: '10:00', end: '11:00' },
+      { start: '11:00', end: '12:00' },
+      { start: '12:00', end: '13:00' },
+      { start: '13:00', end: '14:00' },
+      { start: '14:00', end: '15:00' },
+      { start: '15:00', end: '16:00' },
+      { start: '16:00', end: '17:00' },
+      { start: '17:00', end: '18:00' },
+      { start: '18:00', end: '19:00' },
+      { start: '19:00', end: '20:00' }
+    ];
 
-    await Slot.insertMany([
-      {
-        doctor_id: doctors[0]._id,
-        hospital_id: hospitals[0]._id,
-        date: today,
-        start_time: '09:00',
-        end_time: '10:00',
-        capacity: 5,
-        current_bookings: 2,
-        status: 'available'
-      },
-      {
-        doctor_id: doctors[0]._id,
-        hospital_id: hospitals[0]._id,
-        date: today,
-        start_time: '10:00',
-        end_time: '11:00',
-        capacity: 5,
-        current_bookings: 4,
-        status: 'almost_full'
-      },
-      {
-        doctor_id: doctors[0]._id,
-        hospital_id: hospitals[0]._id,
-        date: today,
-        start_time: '11:00',
-        end_time: '12:00',
-        capacity: 5,
-        current_bookings: 5,
-        status: 'full'
-      },
-      {
-        doctor_id: doctors[1]._id,
-        hospital_id: hospitals[0]._id,
-        date: today,
-        start_time: '09:00',
-        end_time: '10:00',
-        capacity: 5,
-        current_bookings: 1,
-        status: 'available'
-      },
-      {
-        doctor_id: doctors[2]._id,
-        hospital_id: hospitals[1]._id,
-        date: today,
-        start_time: '14:00',
-        end_time: '15:00',
-        capacity: 4,
-        current_bookings: 3,
-        status: 'almost_full'
-      },
-      {
-        doctor_id: doctors[3]._id,
-        hospital_id: hospitals[2]._id,
-        date: today,
-        start_time: '10:00',
-        end_time: '11:00',
-        capacity: 5,
-        current_bookings: 0,
-        status: 'available'
-      }
-    ]);
+    const slotDocs = [];
+    for (let day = 0; day < 7; day += 1) {
+      const date = new Date();
+      date.setDate(date.getDate() + day);
+      const dateStr = date.toISOString().split('T')[0];
+
+      doctors.forEach((doctor) => {
+        timeSlots.forEach((slot) => {
+          slotDocs.push({
+            doctor_id: doctor._id,
+            hospital_id: doctor.hospital_id,
+            date: dateStr,
+            start_time: slot.start,
+            end_time: slot.end,
+            capacity: 5,
+            current_bookings: 0,
+            status: 'available',
+            duration_mins: 60
+          });
+        });
+      });
+    }
+
+    await Slot.insertMany(slotDocs);
 
     await Patient.insertMany([
       {

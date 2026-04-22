@@ -5,7 +5,7 @@ import Loader from "../components/Loader";
 import { classifyPriority } from "../api/ai";
 import { createAppointment } from "../api/appointment";
 import { registerPatient } from "../api/patient";
-import { fallbackPriority } from "../utils/helpers";
+import { fallbackPriority, formatPatient } from "../utils/helpers";
 import { setPatient } from "../utils/storage";
 
 export default function Booking() {
@@ -22,6 +22,7 @@ export default function Booking() {
   const department = searchParams.get("department");
   const symptoms = searchParams.get("symptoms") || "";
   const time = searchParams.get("time");
+  const date = searchParams.get("date");
   const wait = searchParams.get("wait");
   const localPriority = useMemo(() => fallbackPriority(symptoms), [symptoms]);
 
@@ -69,7 +70,7 @@ export default function Booking() {
       navigate(
         `/confirm?doctor=${encodeURIComponent(doctorName)}&hospital=${encodeURIComponent(hospital)}&time=${encodeURIComponent(
           time,
-        )}&wait=${wait}&hospitalId=${hospitalId}`,
+        )}&date=${encodeURIComponent(date || "")}&wait=${wait}&hospitalId=${hospitalId}`,
       );
     } catch (error) {
       toast.error(error.response?.data?.message || "Booking failed");
@@ -81,6 +82,11 @@ export default function Booking() {
   return (
     <>
       <h2 className="text-2xl font-bold">Patient Booking</h2>
+      {date && time && (
+        <p className="mt-2 text-blue-700">
+          Appointment on <span className="font-semibold">{date}</span> at <span className="font-semibold">{time}</span>
+        </p>
+      )}
       <form onSubmit={onSubmit} className="mt-6 grid max-w-2xl gap-4 rounded-2xl border border-blue-100 bg-white p-6">
         <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Full Name*" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <input className="rounded-lg border border-blue-200 px-3 py-2" type="number" placeholder="Age*" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />

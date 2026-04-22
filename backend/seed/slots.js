@@ -32,17 +32,24 @@ function buildUpcomingDates(daysAhead = 7) {
 }
 
 async function seedSlots() {
-  await Slot.deleteMany({ date: { $gte: formatDate(new Date()) } });
-  console.log('Cleared existing future slots');
-
   const doctors = await Doctor.find({});
   const dates = buildUpcomingDates();
-  const slots = [];
+  let createdCount = 0;
 
-  doctors.forEach((doctor) => {
-    dates.forEach((date) => {
-      timeSlots.forEach(({ start, end }) => {
-        slots.push({
+  for (const date of dates) {
+    for (const doctor of doctors) {
+      for (const { start, end } of timeSlots) {
+        const exists = await Slot.findOne({
+          doctor_id: doctor._id,
+          date,
+          start_time: start
+        });
+
+        if (exists) {
+          continue;
+        }
+
+        await Slot.create({
           doctor_id: doctor._id,
           hospital_id: doctor.hospital_id,
           date,
@@ -53,17 +60,14 @@ async function seedSlots() {
           status: 'available',
           duration_mins: 60
         });
-      });
-    });
-  });
-
-  if (slots.length) {
-    await Slot.insertMany(slots);
+        createdCount += 1;
+      }
+    }
   }
 
   return {
     doctors: doctors.length,
-    slots: slots.length,
+    slots: createdCount,
     dates
   };
 }

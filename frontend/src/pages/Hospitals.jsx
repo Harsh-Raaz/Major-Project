@@ -50,6 +50,7 @@ export default function Hospitals() {
   }, [department]);
 
   const toggleCompare = (id) => {
+    console.log("Toggling hospital ID:", id);
     setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : prev.length < 2 ? [...prev, id] : prev));
   };
 
@@ -128,7 +129,7 @@ export default function Hospitals() {
               key={hospital.id || hospital._id}
               hospital={hospital}
               recommended={index === 0}
-              checked={selected.includes(hospital.id || hospital._id)}
+              checked={selected.includes(hospital._id || hospital.id)}
               onToggleCompare={toggleCompare}
               onViewDoctors={() => onViewDoctors(hospital)}
               onRoute={() => onGetRoute(hospital)}

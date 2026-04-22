@@ -44,21 +44,22 @@ function buildUpcomingDates(daysAhead = 7) {
 async function seedUpcomingSlots() {
   const doctors = await Doctor.find({});
   const dates = buildUpcomingDates();
-  const slotsToCreate = [];
+  let createdCount = 0;
 
   for (const doctor of doctors) {
     for (const date of dates) {
-      const existingCount = await Slot.countDocuments({
-        doctor_id: doctor._id,
-        date
-      });
+      for (const { start, end } of timeSlots) {
+        const exists = await Slot.findOne({
+          doctor_id: doctor._id,
+          date,
+          start_time: start
+        });
 
-      if (existingCount > 0) {
-        continue;
-      }
+        if (exists) {
+          continue;
+        }
 
-      timeSlots.forEach(({ start, end }) => {
-        slotsToCreate.push({
+        await Slot.create({
           doctor_id: doctor._id,
           hospital_id: doctor.hospital_id,
           date,
@@ -69,15 +70,12 @@ async function seedUpcomingSlots() {
           status: 'available',
           duration_mins: 60
         });
-      });
+        createdCount += 1;
+      }
     }
   }
 
-  if (slotsToCreate.length) {
-    await Slot.insertMany(slotsToCreate);
-  }
-
-  return slotsToCreate.length;
+  return createdCount;
 }
 
 mongoose
