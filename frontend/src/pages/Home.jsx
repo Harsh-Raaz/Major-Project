@@ -13,14 +13,33 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
+  const getSeasonalAlert = (departmentData, alertData) =>
+    departmentData?.seasonal_alert ?? alertData?.seasonal_alert ?? alertData ?? null;
+
   const onSearch = async () => {
     if (!symptoms.trim()) return toast.error("Please enter symptoms");
     setLoading(true);
+    setResult(null);
     try {
       const [deptRes, alertRes] = await Promise.all([suggestDepartment(symptoms), seasonalAlert(symptoms)]);
+      const departmentData = deptRes.data || {};
+      const alertData = alertRes.data || null;
+      const seasonalAlertResult = getSeasonalAlert(departmentData, alertData);
+      const possibleMatches = Array.isArray(departmentData.all_matches)
+        ? departmentData.all_matches
+        : departmentData.department
+          ? [departmentData.department]
+          : [];
+      const riskDiseases = Array.isArray(seasonalAlertResult?.risk_diseases)
+        ? seasonalAlertResult.risk_diseases
+        : [];
+
       setResult({
-        department: deptRes.data?.department,
-        seasonal_alert: deptRes.data?.seasonal_alert ?? alertRes.data?.seasonal_alert ?? alertRes.data ?? null,
+        department: departmentData.department,
+        confidence: departmentData.confidence,
+        possible_matches: possibleMatches,
+        risk_diseases: riskDiseases,
+        seasonal_alert: seasonalAlertResult,
       });
     } catch {
       toast.error("Failed to process symptoms");
@@ -49,12 +68,45 @@ export default function Home() {
         </div>
         {result?.department && (
           <div className="mx-auto mt-6 max-w-3xl">
-            <AlertBox type="success" text={`Based on your symptoms we suggest: ${result.department}`} />
+            <AlertBox
+              type="success"
+              text={`Based on your symptoms we suggest: ${result.department}${
+                result.confidence ? ` (${result.confidence} confidence)` : ""
+              }`}
+            />
+          </div>
+        )}
+        {(result?.possible_matches?.length > 0 || result?.risk_diseases?.length > 0) && (
+          <div className="mx-auto mt-4 max-w-3xl rounded-2xl border border-blue-100 bg-white p-5 text-left shadow-sm">
+            {result.possible_matches?.length > 0 && (
+              <>
+                <h3 className="text-sm font-semibold uppercase text-blue-700">Possible departments</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {result.possible_matches.map((item) => (
+                    <span key={item} className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-800">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+            {result.risk_diseases?.length > 0 && (
+              <>
+                <h3 className="mt-5 text-sm font-semibold uppercase text-blue-700">Seasonal disease possibilities</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {result.risk_diseases.slice(0, 6).map((item) => (
+                    <span key={item} className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-800">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
         {result?.seasonal_alert && (
           <div className="mx-auto mt-4 max-w-3xl">
-            <AlertBox type="error" text={result.seasonal_alert?.message || result.seasonal_alert} />
+            <AlertBox type="error" text={result.seasonal_alert?.message || result.seasonal_alert?.warning || result.seasonal_alert} />
           </div>
         )}
         {result?.department && (

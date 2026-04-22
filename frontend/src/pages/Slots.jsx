@@ -7,6 +7,13 @@ import SlotCard from "../components/SlotCard";
 import { getSlots } from "../api/doctor";
 import { loadBalanceSlot } from "../api/ai";
 
+const normalizeSlotsResponse = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.slots)) return data.slots;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
+
 export default function Slots() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,23 +33,34 @@ export default function Slots() {
     const today = new Date().toISOString().slice(0, 10);
     const load = async () => {
       setLoading(true);
+      let fetchedSlots = [];
       try {
         const res = await getSlots(id, today);
-        const arr = res.data?.slots || res.data || [];
-        setSlots(arr);
-        const sRes = await loadBalanceSlot(arr);
-        setSuggestions(sRes.data?.suggested_slots || sRes.data?.recommendations || []);
+        console.log("slots raw response", res);
+        fetchedSlots = normalizeSlotsResponse(res.data);
+        setSlots(fetchedSlots);
       } catch {
         toast.error("Failed loading slots");
       } finally {
         setLoading(false);
+      }
+
+      if (!fetchedSlots.length) return;
+
+      try {
+        const sRes = await loadBalanceSlot(fetchedSlots);
+        setSuggestions(sRes.data?.suggested_slots || sRes.data?.recommendations || []);
+      } catch {
+        setSuggestions([]);
       }
     };
     load();
   }, [id]);
 
   const wait = selected ? Number(selected.current_bookings || 0) * (avgMins + 3) : 0;
-  const crowded = selected && Number(selected.load_factor ?? selected.load ?? 0) > 80;
+  const selectedLoad =
+    selected?.capacity > 0 ? (Number(selected.current_bookings || 0) / Number(selected.capacity)) * 100 : 0;
+  const crowded = selected && Number(selected.load_factor ?? selected.load ?? selectedLoad) > 80;
 
   return (
     <AppLayout>
@@ -55,7 +73,7 @@ export default function Slots() {
       ) : (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {slots.map((slot) => (
-            <SlotCard key={slot.id || slot._id} slot={slot} onSelect={() => setSelected(slot)} />
+            <SlotCard key={slot.id || slot._id} slot={slot} onSelect={setSelected} />
           ))}
         </div>
       )}
@@ -68,15 +86,21 @@ export default function Slots() {
             Estimated wait time: <span className="font-semibold">{wait} minutes</span>
           </p>
           <button
-            onClick={() =>
-              navigate(
-                `/booking?doctorId=${id}&slotId=${selected.id || selected._id}&hospitalId=${hospitalId}&doctorName=${encodeURIComponent(
-                  doctorName,
-                )}&hospital=${encodeURIComponent(hospital)}&department=${encodeURIComponent(department)}&time=${encodeURIComponent(
-                  selected.time_range || `${selected.start_time} - ${selected.end_time}`,
-                )}&symptoms=${encodeURIComponent(symptoms)}&wait=${wait}`,
-              )
-            }
+            onClick={() => {
+              const params = new URLSearchParams({
+                doctorId: id,
+                slotId: selected.id || selected._id,
+                hospitalId: hospitalId || selected.hospital_id || "",
+                doctorName,
+                hospital: hospital || "",
+                department: department || "",
+                time: selected.time_range || `${selected.start_time} - ${selected.end_time}`,
+                symptoms,
+                wait: String(wait),
+              });
+              console.log("booking params from slots", Object.fromEntries(params.entries()));
+              navigate(`/booking?${params.toString()}`);
+            }}
             className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white"
           >
             Confirm Booking

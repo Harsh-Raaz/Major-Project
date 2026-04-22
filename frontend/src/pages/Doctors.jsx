@@ -58,6 +58,25 @@ export default function Doctors() {
     loadDoctors();
   }, [id, selectedDept]);
 
+  const goToSlots = (doctor) => {
+    const doctorId = doctor.id || doctor._id;
+    const doctorHospitalId = doctor.hospital_id?._id || doctor.hospital_id || id;
+    const params = new URLSearchParams({
+      doctorName: doctor.name || "",
+      hospitalId: doctorHospitalId,
+      hospital: hospitalName,
+      department: selectedDept || "",
+      symptoms,
+      avgMins: String(doctor.avg_consultation_mins ?? 10),
+    });
+
+    console.log("slots params from doctors", {
+      doctorId,
+      ...Object.fromEntries(params.entries()),
+    });
+    navigate(`/slots/${doctorId}?${params.toString()}`);
+  };
+
   return (
     <AppLayout>
       <h2 className="text-2xl font-bold">{hospitalName}</h2>
@@ -87,15 +106,7 @@ export default function Doctors() {
               key={doctor.id || doctor._id}
               doctor={doctor}
               bestMatch={index === 0}
-              onBook={() =>
-                navigate(
-                  `/slots/${doctor.id || doctor._id}?doctorName=${encodeURIComponent(doctor.name)}&hospitalId=${id}&hospital=${encodeURIComponent(
-                    hospitalName,
-                  )}&department=${encodeURIComponent(selectedDept)}&symptoms=${encodeURIComponent(symptoms)}&avgMins=${
-                    doctor.avg_consultation_mins ?? 10
-                  }`,
-                )
-              }
+              onBook={() => goToSlots(doctor)}
             />
           ))}
         </div>
