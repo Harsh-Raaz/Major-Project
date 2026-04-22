@@ -10,6 +10,18 @@ import { recommendHospitals } from "../api/ai";
 import { fixedPatient } from "../utils/helpers";
 import { addToSearchHistory } from "../utils/storage";
 
+const getHospitalCoordinates = (hospital) => {
+  const coordinates = hospital.location?.coordinates;
+  const lat = Number(coordinates?.[1] ?? hospital.location?.lat ?? hospital.lat ?? hospital.latitude);
+  const lng = Number(coordinates?.[0] ?? hospital.location?.lng ?? hospital.lng ?? hospital.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+};
+
 export default function Hospitals() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -72,6 +84,31 @@ export default function Hospitals() {
     );
   };
 
+  const onGetRoute = (hospital) => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const destination = getHospitalCoordinates(hospital);
+
+        if (!destination) {
+          toast.error("Hospital location coordinates are not available");
+          return;
+        }
+
+        window.open(
+          `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${destination.lat},${destination.lng}`,
+          "_blank",
+        );
+      },
+      () => toast.error("Could not get your location. Please allow location access."),
+    );
+  };
+
   return (
     <AppLayout>
       <div className="mb-5 flex items-center justify-between">
@@ -94,7 +131,7 @@ export default function Hospitals() {
               checked={selected.includes(hospital.id || hospital._id)}
               onToggleCompare={toggleCompare}
               onViewDoctors={() => onViewDoctors(hospital)}
-              onRoute={() => navigate(`/route/${hospital.id || hospital._id}`)}
+              onRoute={() => onGetRoute(hospital)}
             />
           ))}
         </div>

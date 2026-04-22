@@ -5,6 +5,7 @@ import Loader from '../components/Loader';
 import Modal from '../components/Modal';
 import { useAuth } from '../hooks/useAuth';
 import {
+  autocompleteAppointments,
   cancelAppointment,
   getFollowUp,
   rescheduleAppointment,
@@ -38,6 +39,12 @@ export default function Dashboard() {
 
       setLoading(true);
       try {
+        try {
+          await autocompleteAppointments();
+        } catch {
+          // Non-blocking: dashboard should still load if the check fails.
+        }
+
         const [appointmentsRes, notificationsRes] = await Promise.all([
           getPatientAppointments(patientId),
           getPatientNotifications(patientId),

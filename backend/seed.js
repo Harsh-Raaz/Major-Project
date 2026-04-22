@@ -16,12 +16,12 @@ async function seed() {
 
     const hospitals = await Hospital.insertMany([
       {
-        name: 'City General Hospital',
+        name: 'M S Ramaiah Memorial Hospital',
         location: {
-          address: 'MG Road',
+          address: ' M S Ramaiah Nagar',
           city: 'Bengaluru',
-          lat: 12.9716,
-          lng: 77.5946
+          lat: 13.028379195967135, 
+          lng: 77.56979548453239
         },
         departments: [
           'General Medicine',

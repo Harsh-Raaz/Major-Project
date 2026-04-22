@@ -1,5 +1,6 @@
 import { api } from "./axios";
 
+export const autocompleteAppointments = () => api.get("/appointments/autocomplete");
 export const createAppointment = (payload) => api.post("/appointments", payload);
 export const cancelAppointment = (id) => api.put(`/appointments/${id}/cancel`, {});
 export const rescheduleAppointment = (id, newSlotId) =>

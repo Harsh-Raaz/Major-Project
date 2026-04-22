@@ -4,6 +4,7 @@ const cors = require('cors');
 const cron = require('node-cron');
 const Doctor = require('./models/Doctor');
 const Slot = require('./models/Slot');
+const appointmentsRouter = require('./routes/appointments');
 require('dotenv').config();
 
 const app = express();
@@ -86,6 +87,18 @@ mongoose
         console.error('Daily slot refresh failed:', err);
       }
     });
+
+    cron.schedule('*/15 * * * *', async () => {
+      try {
+        const completedCount =
+          await appointmentsRouter.autoCompleteExpiredAppointments();
+        if (completedCount > 0) {
+          console.log(`Auto-completed ${completedCount} appointments`);
+        }
+      } catch (err) {
+        console.error('Auto-complete cron error:', err.message);
+      }
+    });
   })
   .catch((err) => {
     console.error(err);
@@ -100,7 +113,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/hospitals', require('./routes/hospitals'));
 app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/slots', require('./routes/slots'));
-app.use('/api/appointments', require('./routes/appointments'));
+app.use('/api/appointments', appointmentsRouter);
 app.use('/api/waitlist', require('./routes/waitlist'));
 app.use('/api/patients', require('./routes/patients'));
 app.use('/api/notifications', require('./routes/notifications'));

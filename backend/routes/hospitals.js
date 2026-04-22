@@ -80,10 +80,21 @@ router.get('/:id/route', async (req, res) => {
 
     const patientLat = parseFloat(req.query.patient_lat);
     const patientLng = parseFloat(req.query.patient_lng);
+    if (Number.isNaN(patientLat) || Number.isNaN(patientLng)) {
+      return res.status(400).json({
+        message: 'patient_lat and patient_lng are required'
+      });
+    }
     const R = 6371;
     const PI = Math.PI;
-    const hLat = hospital.location.lat;
-    const hLng = hospital.location.lng;
+    const hLat = hospital.location && hospital.location.lat;
+    const hLng = hospital.location && hospital.location.lng;
+
+    if (!Number.isFinite(hLat) || !Number.isFinite(hLng)) {
+      return res.status(400).json({
+        message: 'Hospital location coordinates are not available'
+      });
+    }
 
     const dLat = ((hLat - patientLat) * PI) / 180;
     const dLng = ((hLng - patientLng) * PI) / 180;
