@@ -16,6 +16,9 @@ import {
 } from '../api/patient';
 import { getPatient } from '../utils/storage';
 
+const slotTimeText = (slot) =>
+  slot.time_range || `${slot.start_time} - ${slot.end_time}`;
+
 export default function Dashboard() {
   const { user } = useAuth();
   const patient = getPatient();
@@ -257,7 +260,7 @@ export default function Dashboard() {
                 }
                 className="rounded-lg border border-blue-100 p-3 text-left hover:bg-blue-50"
               >
-                {slot.time_range || `${slot.start_time} - ${slot.end_time}`}
+                {slotTimeText(slot)}
               </button>
             ))}
           </div>

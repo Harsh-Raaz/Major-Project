@@ -13,15 +13,25 @@ export default function SlotCard({ slot, onSelect }) {
   const label = slot.time_range || `${slot.start_time} - ${slot.end_time}`;
 
   const handleClick = () => {
-    if (!full) {
-      onSelect?.(slot);
-    }
+    onSelect?.(slot);
   };
 
   return (
-    <button disabled={full} onClick={handleClick} className={`rounded-lg p-3 text-sm font-semibold ${style}`}>
-      {label}
-    </button>
+    <div
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          handleClick();
+        }
+      }}
+      className={`cursor-pointer rounded-xl border border-blue-100 p-3 text-sm font-semibold ${style}`}
+    >
+      <p>{label}</p>
+      <p className="mt-1 font-normal">Capacity: {slot.current_bookings || 0}/{slot.capacity || 0}</p>
+      <p className="font-normal">Status: {slot.status || "available"}</p>
+    </div>
   );
 }
 

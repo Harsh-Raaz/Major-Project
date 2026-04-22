@@ -39,7 +39,8 @@ export default function Slots() {
         console.log("slots raw response", res);
         fetchedSlots = normalizeSlotsResponse(res.data);
         setSlots(fetchedSlots);
-      } catch {
+      } catch (error) {
+        console.error("Slots fetch error:", error);
         toast.error("Failed loading slots");
       } finally {
         setLoading(false);
@@ -47,6 +48,7 @@ export default function Slots() {
 
       if (!fetchedSlots.length) return;
 
+      // Slots must render independently; AI suggestions are optional.
       try {
         const sRes = await loadBalanceSlot(fetchedSlots);
         setSuggestions(sRes.data?.suggested_slots || sRes.data?.recommendations || []);

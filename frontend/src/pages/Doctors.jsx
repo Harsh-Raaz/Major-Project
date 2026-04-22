@@ -64,8 +64,8 @@ export default function Doctors() {
     const params = new URLSearchParams({
       doctorName: doctor.name || "",
       hospitalId: doctorHospitalId,
-      hospital: hospitalName,
-      department: selectedDept || "",
+      hospital: doctor.hospital_name || hospitalName,
+      department: doctor.department || selectedDept || "",
       symptoms,
       avgMins: String(doctor.avg_consultation_mins ?? 10),
     });
