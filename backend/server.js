@@ -1,10 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const cron = require('node-cron');
 const Doctor = require('./models/Doctor');
 const Slot = require('./models/Slot');
 require('dotenv').config();
+
+let cron = null;
+try {
+  cron = require('node-cron');
+} catch (error) {
+  console.warn(
+    'node-cron is not installed. Daily slot refresh is disabled until the dependency is installed.'
+  );
+}
 
 const app = express();
 app.use(cors());
@@ -77,15 +85,17 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected successfully');
-    cron.schedule('0 0 * * *', async () => {
-      try {
-        console.log('Seeding slots for upcoming week...');
-        const createdCount = await seedUpcomingSlots();
-        console.log(`Slot refresh complete. Created ${createdCount} slots.`);
-      } catch (err) {
-        console.error('Daily slot refresh failed:', err);
-      }
-    });
+    if (cron) {
+      cron.schedule('0 0 * * *', async () => {
+        try {
+          console.log('Seeding slots for upcoming week...');
+          const createdCount = await seedUpcomingSlots();
+          console.log(`Slot refresh complete. Created ${createdCount} slots.`);
+        } catch (err) {
+          console.error('Daily slot refresh failed:', err);
+        }
+      });
+    }
   })
   .catch((err) => {
     console.error(err);
