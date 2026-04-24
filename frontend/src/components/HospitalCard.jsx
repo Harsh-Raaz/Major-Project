@@ -1,40 +1,93 @@
+import { MapPin, ArrowRightLeft, Route } from "lucide-react";
 import { scoreClass, starText } from "../utils/helpers";
 
-export default function HospitalCard({ hospital, recommended, checked, onToggleCompare, onViewDoctors, onRoute }) {
+export default function HospitalCard({
+  hospital,
+  recommended,
+  checked,
+  onToggleCompare,
+  onViewDoctors,
+  onRoute,
+}) {
   const id = hospital.id || hospital._id;
+
   return (
-    <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-blue-950">{hospital.name}</h3>
-          <p className="text-sm text-blue-700">{hospital.address}</p>
+    <article className="cc-surface relative overflow-hidden p-5 animate-fade-up">
+      <div className="absolute inset-y-0 left-0 w-1 bg-[#00B8A9]" />
+      <div className="flex flex-wrap items-start justify-between gap-4 pl-3">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-2xl font-semibold text-[#0A1628]">
+              {hospital.name}
+            </h3>
+            {recommended && (
+              <span className="animate-pulse-slow rounded-full bg-[#00B8A9] px-3 py-1 text-xs font-semibold text-white">
+                Recommended
+              </span>
+            )}
+          </div>
+          <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+            <MapPin size={15} className="text-[#00B8A9]" />
+            {hospital.address}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {recommended && <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Recommended</span>}
-          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(Number(hospital.score || 0))}`}>
-            Score: {Math.round(Number(hospital.score || 0) * 100)}%
-          </span>
-        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(
+            Number(hospital.score || 0)
+          )}`}
+        >
+          Score {Math.round(Number(hospital.score || 0) * 100)}%
+        </span>
       </div>
-      <div className="mt-3 grid gap-2 text-sm text-blue-800 md:grid-cols-4">
-        <p>Rating: {starText(hospital.rating || 4)} ({hospital.rating || 4})</p>
-        <p>Distance: {hospital.distance_km ?? hospital.distance ?? 0} km</p>
-        <p>Available slots: {hospital.available_slots_today ?? 0}</p>
-        <div className="flex flex-wrap gap-2">
-          {(hospital.facilities || []).map((facility) => (
-            <span key={facility} className="rounded-full bg-blue-50 px-2 py-1 text-xs">{facility}</span>
+
+      <div className="mt-5 grid gap-3 pl-3 text-sm text-slate-700 md:grid-cols-4">
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rating</p>
+          <p className="mt-2 font-semibold text-[#0A1628]">
+            {starText(hospital.rating || 4)} ({hospital.rating || 4})
+          </p>
+        </div>
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Distance</p>
+          <p className="mt-2 font-semibold text-[#0A1628]">
+            {hospital.distance_km ?? hospital.distance ?? 0} km
+          </p>
+        </div>
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Slots today</p>
+          <p className="mt-2 font-semibold text-[#0A1628]">
+            {hospital.available_slots_today ?? 0}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-start gap-2 rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          {(hospital.facilities || []).slice(0, 4).map((facility) => (
+            <span
+              key={facility}
+              className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700"
+            >
+              {facility}
+            </span>
           ))}
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm">
+
+      <div className="mt-5 flex flex-wrap items-center gap-3 pl-3">
+        <label className="inline-flex items-center gap-2 rounded-full border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] px-4 py-2 text-sm text-slate-700">
           <input checked={checked} onChange={() => onToggleCompare(id)} type="checkbox" />
           Compare
         </label>
-        <button onClick={onViewDoctors} className="rounded-lg bg-emerald-600 px-4 py-2 text-white">View Doctors</button>
-        <button onClick={onRoute} className="rounded-lg border border-blue-200 px-4 py-2 text-blue-700">Route</button>
+        <button onClick={onViewDoctors} className="cc-btn-primary">
+          View Doctors
+        </button>
+        <button onClick={onRoute} className="cc-btn-secondary">
+          <Route size={16} />
+          Route
+        </button>
+        <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+          <ArrowRightLeft size={15} />
+          Smart comparison enabled
+        </span>
       </div>
     </article>
   );
 }
-

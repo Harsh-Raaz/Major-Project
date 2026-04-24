@@ -36,11 +36,9 @@ export default function Slots() {
       let fetchedSlots = [];
       try {
         const res = await getSlots(id, today);
-        console.log("slots raw response", res);
         fetchedSlots = normalizeSlotsResponse(res.data);
         setSlots(fetchedSlots);
-      } catch (error) {
-        console.error("Slots fetch error:", error);
+      } catch {
         toast.error("Failed loading slots");
       } finally {
         setLoading(false);
@@ -48,10 +46,11 @@ export default function Slots() {
 
       if (!fetchedSlots.length) return;
 
-      // Slots must render independently; AI suggestions are optional.
       try {
         const sRes = await loadBalanceSlot(fetchedSlots);
-        setSuggestions(sRes.data?.suggested_slots || sRes.data?.recommendations || []);
+        setSuggestions(
+          sRes.data?.suggested_slots || sRes.data?.recommendations || []
+        );
       } catch {
         setSuggestions([]);
       }
@@ -59,34 +58,57 @@ export default function Slots() {
     load();
   }, [id]);
 
-  const wait = selected ? Number(selected.current_bookings || 0) * (avgMins + 3) : 0;
+  const wait = selected
+    ? Number(selected.current_bookings || 0) * (avgMins + 3)
+    : 0;
   const selectedLoad =
-    selected?.capacity > 0 ? (Number(selected.current_bookings || 0) / Number(selected.capacity)) * 100 : 0;
-  const crowded = selected && Number(selected.load_factor ?? selected.load ?? selectedLoad) > 80;
+    selected?.capacity > 0
+      ? (Number(selected.current_bookings || 0) / Number(selected.capacity)) *
+        100
+      : 0;
+  const crowded =
+    selected && Number(selected.load_factor ?? selected.load ?? selectedLoad) > 80;
 
   return (
     <AppLayout>
-      <h2 className="text-2xl font-bold">{doctorName}</h2>
-      <p className="text-blue-700">{hospital}</p>
+      <section className="animate-fade-up">
+        <p className="cc-eyebrow">Slot Selection</p>
+        <h2 className="mt-3 font-display text-3xl font-semibold text-[#0A1628]">
+          {doctorName}
+        </h2>
+        <p className="mt-2 text-slate-600">{hospital}</p>
+      </section>
+
       {loading ? (
         <div className="mt-8 flex justify-center">
           <Loader />
         </div>
       ) : (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {slots.map((slot) => (
             <SlotCard key={slot.id || slot._id} slot={slot} onSelect={setSelected} />
           ))}
         </div>
       )}
+
       {selected && (
-        <div className="mt-6 rounded-xl border border-blue-100 bg-white p-5">
-          <p>
-            Selected slot: <span className="font-semibold">{selected.time_range || `${selected.start_time} - ${selected.end_time}`}</span>
-          </p>
-          <p className="mt-2">
-            Estimated wait time: <span className="font-semibold">{wait} minutes</span>
-          </p>
+        <div className="cc-surface mt-8 animate-fade-up p-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-[20px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Selected slot</p>
+              <p className="mt-2 font-display text-2xl text-[#0A1628]">
+                {selected.time_range || `${selected.start_time} - ${selected.end_time}`}
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-[rgba(245,158,11,0.18)] bg-[#fff7e6] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Estimated wait</p>
+              <p className="mt-2 font-display text-2xl text-[#0A1628]">{wait} minutes</p>
+            </div>
+            <div className="rounded-[20px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Department</p>
+              <p className="mt-2 font-display text-2xl text-[#0A1628]">{department || "General"}</p>
+            </div>
+          </div>
           <button
             onClick={() => {
               const params = new URLSearchParams({
@@ -96,23 +118,28 @@ export default function Slots() {
                 doctorName,
                 hospital: hospital || "",
                 department: department || "",
-                time: selected.time_range || `${selected.start_time} - ${selected.end_time}`,
+                time:
+                  selected.time_range ||
+                  `${selected.start_time} - ${selected.end_time}`,
                 symptoms,
                 wait: String(wait),
               });
-              console.log("booking params from slots", Object.fromEntries(params.entries()));
               navigate(`/booking?${params.toString()}`);
             }}
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white"
+            className="cc-btn-primary mt-6"
           >
             Confirm Booking
           </button>
           {crowded && (
-            <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
-              <p className="font-semibold">This slot is almost full. Here are less crowded alternatives:</p>
-              <ul className="mt-2 list-disc pl-5">
-                {suggestions.slice(0, 2).map((s, i) => (
-                  <li key={i}>{s.time_range || `${s.start_time} - ${s.end_time}`}</li>
+            <div className="mt-6 rounded-[20px] border border-[#F59E0B]/25 bg-[#fff7e6] p-4 text-[#8a6004]">
+              <p className="font-semibold">
+                This slot is almost full. Here are less crowded alternatives:
+              </p>
+              <ul className="mt-3 list-disc pl-5">
+                {suggestions.slice(0, 2).map((slot, index) => (
+                  <li key={index}>
+                    {slot.time_range || `${slot.start_time} - ${slot.end_time}`}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -122,4 +149,3 @@ export default function Slots() {
     </AppLayout>
   );
 }
-

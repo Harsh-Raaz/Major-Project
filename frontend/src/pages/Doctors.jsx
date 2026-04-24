@@ -36,12 +36,6 @@ export default function Doctors() {
   }, [id, initialDepartment]);
 
   useEffect(() => {
-    if (initialDepartment) {
-      setSelectedDept(initialDepartment);
-    }
-  }, [initialDepartment]);
-
-  useEffect(() => {
     if (!selectedDept) return;
     const loadDoctors = async () => {
       setLoading(true);
@@ -69,26 +63,32 @@ export default function Doctors() {
       symptoms,
       avgMins: String(doctor.avg_consultation_mins ?? 10),
     });
-
-    console.log("slots params from doctors", {
-      doctorId,
-      ...Object.fromEntries(params.entries()),
-    });
     navigate(`/slots/${doctorId}?${params.toString()}`);
   };
 
   return (
     <AppLayout>
-      <h2 className="text-2xl font-bold">{hospitalName}</h2>
-      <p className="text-blue-700">Select department to see doctor recommendations</p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <section className="animate-fade-up">
+        <p className="cc-eyebrow">Doctor Discovery</p>
+        <h2 className="mt-3 font-display text-3xl font-semibold text-[#0A1628]">
+          {hospitalName}
+        </h2>
+        <p className="mt-2 text-slate-600">
+          Select a department to view ranked doctor recommendations.
+        </p>
+      </section>
+      <div className="mt-6 flex flex-wrap gap-2">
         {departments.map((d) => {
           const value = d.name || d;
           return (
             <button
               key={value}
               onClick={() => setSelectedDept(value)}
-              className={`rounded-full px-4 py-2 text-sm ${selectedDept === value ? "bg-blue-600 text-white" : "border border-blue-200 bg-white text-blue-700"}`}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                selectedDept === value
+                  ? "bg-[#0A1628] text-white"
+                  : "border border-[rgba(0,184,169,0.15)] bg-white text-slate-700"
+              }`}
             >
               {value}
             </button>

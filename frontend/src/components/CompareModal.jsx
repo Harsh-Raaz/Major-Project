@@ -13,11 +13,16 @@ export default function CompareModal({ data, onClose }) {
     <Modal title="Hospital Comparison" onClose={onClose}>
       {hospitals.length >= 2 ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {hospitals.slice(0, 2).map((hospital, idx) => (
-            <div key={hospital.id || idx} className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-              <h4 className="text-lg font-semibold text-blue-950">{hospital.name}</h4>
-              <p className="text-sm text-blue-700">{hospital.address}</p>
-              <div className="mt-3 space-y-1 text-sm text-blue-900">
+          {hospitals.slice(0, 2).map((hospital, index) => (
+            <div
+              key={hospital.id || index}
+              className="rounded-[20px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-5"
+            >
+              <h4 className="font-display text-xl font-semibold text-[#0A1628]">
+                {hospital.name}
+              </h4>
+              <p className="mt-2 text-sm text-slate-600">{hospital.address}</p>
+              <div className="mt-4 grid gap-2 text-sm text-slate-700">
                 <p>Rating: {hospital.rating ?? "-"}</p>
                 <p>Distance: {hospital.distance_km ?? hospital.distance ?? "-"} km</p>
                 <p>Slots Today: {hospital.available_slots_today ?? "-"}</p>
@@ -27,9 +32,10 @@ export default function CompareModal({ data, onClose }) {
           ))}
         </div>
       ) : (
-        <pre className="rounded-lg bg-slate-50 p-3 text-xs">{JSON.stringify(data, null, 2)}</pre>
+        <pre className="rounded-[20px] bg-slate-50 p-4 text-xs">
+          {JSON.stringify(data, null, 2)}
+        </pre>
       )}
     </Modal>
   );
 }
-

@@ -1,8 +1,166 @@
 @import "tailwindcss";
 
+:root {
+  --cc-dark: #0a1628;
+  --cc-teal: #00b8a9;
+  --cc-mint: #f0fdf9;
+  --cc-amber: #f59e0b;
+  --cc-surface: #ffffff;
+  --cc-line: rgba(0, 184, 169, 0.15);
+  --cc-shadow: 0 4px 24px rgba(0, 184, 169, 0.08);
+}
+
+@theme {
+  --color-brand-dark: #0a1628;
+  --color-brand-teal: #00b8a9;
+  --color-brand-mint: #f0fdf9;
+  --color-brand-amber: #f59e0b;
+  --font-display: "Sora", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+  --animate-fade-up: fadeUp 0.4s ease-out;
+  --animate-pulse-slow: pulse 3s infinite;
+
+  @keyframes fadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: Inter, "Segoe UI", sans-serif;
-  background: linear-gradient(180deg, #f8fbff 0%, #f3f9f7 100%);
-  color: #1e3a5f;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f7fbfa 0%, #f4f8fb 100%);
+  color: var(--cc-dark);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.cc-surface {
+  border: 1px solid var(--cc-line);
+  border-radius: 16px;
+  background: var(--cc-surface);
+  box-shadow: var(--cc-shadow);
+}
+
+.cc-title {
+  font-family: "Sora", sans-serif;
+  color: var(--cc-dark);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.cc-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.cc-muted {
+  color: #64748b;
+}
+
+.cc-btn-primary,
+.cc-btn-secondary,
+.cc-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  padding: 0.85rem 1.3rem;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.cc-btn-primary:hover,
+.cc-btn-secondary:hover,
+.cc-btn-danger:hover {
+  transform: scale(1.02);
+}
+
+.cc-btn-primary {
+  background: var(--cc-teal);
+  color: white;
+  box-shadow: 0 14px 28px rgba(0, 184, 169, 0.24);
+}
+
+.cc-btn-secondary {
+  border: 1px solid var(--cc-line);
+  background: white;
+  color: var(--cc-teal);
+}
+
+.cc-btn-danger {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+.cc-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cc-field span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cc-dark);
+}
+
+.cc-field input,
+.cc-field select,
+.cc-field textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--cc-line);
+  background: #fbfffe;
+  padding: 0.95rem 1rem;
+  font: inherit;
+  color: var(--cc-dark);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cc-field input:focus,
+.cc-field select:focus,
+.cc-field textarea:focus {
+  border-color: rgba(0, 184, 169, 0.45);
+  box-shadow: 0 0 0 4px rgba(0, 184, 169, 0.12);
+}
+
+.cc-hero-grid {
+  background:
+    radial-gradient(circle at top left, rgba(0, 184, 169, 0.2), transparent 30%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 20%),
+    radial-gradient(circle at bottom, rgba(255, 255, 255, 0.08), transparent 35%),
+    linear-gradient(135deg, #081221 0%, #10233a 55%, #0e1b2f 100%);
+}
+
+.cc-glass {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
 }

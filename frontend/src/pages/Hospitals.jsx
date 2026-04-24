@@ -25,8 +25,14 @@ export default function Hospitals() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await recommendHospitals(department, fixedPatient.lat, fixedPatient.lng);
-        const list = (res.data?.hospitals || res.data || []).sort((a, b) => (b.score || 0) - (a.score || 0));
+        const res = await recommendHospitals(
+          department,
+          fixedPatient.lat,
+          fixedPatient.lng
+        );
+        const list = (res.data?.hospitals || res.data || []).sort(
+          (a, b) => (b.score || 0) - (a.score || 0)
+        );
         setHospitals(list);
       } catch {
         toast.error("Could not load hospitals");
@@ -38,7 +44,13 @@ export default function Hospitals() {
   }, [department]);
 
   const toggleCompare = (id) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : prev.length < 2 ? [...prev, id] : prev));
+    setSelected((prev) =>
+      prev.includes(id)
+        ? prev.filter((value) => value !== id)
+        : prev.length < 2
+          ? [...prev, id]
+          : prev
+    );
   };
 
   const onCompare = async () => {
@@ -55,37 +67,49 @@ export default function Hospitals() {
   };
 
   const onViewDoctors = (hospital) => {
-    // Track search history
     addToSearchHistory({
       id: hospital.id || hospital._id,
       name: hospital.name,
-      type: 'hospital',
-      department: department,
-      rating: hospital.rating?.overall,
+      type: "hospital",
+      department,
+      rating: hospital.rating?.overall || hospital.rating,
       timestamp: new Date().toISOString(),
     });
 
     navigate(
-      `/doctors/${hospital.id || hospital._id}?hospital=${encodeURIComponent(hospital.name)}&department=${encodeURIComponent(
-        department,
-      )}&symptoms=${encodeURIComponent(symptoms)}`,
+      `/doctors/${hospital.id || hospital._id}?hospital=${encodeURIComponent(
+        hospital.name
+      )}&department=${encodeURIComponent(department)}&symptoms=${encodeURIComponent(
+        symptoms
+      )}`
     );
   };
 
   return (
     <AppLayout>
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Department: {department}</h2>
-        <button onClick={onCompare} className="rounded-lg bg-blue-600 px-4 py-2 text-white">
-          {comparing ? <Loader small /> : "Compare Selected"}
-        </button>
-      </div>
+      <section className="animate-fade-up">
+        <p className="cc-eyebrow">Hospital Recommendations</p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-3xl font-semibold text-[#0A1628]">
+              Department: {department}
+            </h2>
+            <p className="mt-2 text-slate-600">
+              Ranked by relevance, proximity, and available capacity.
+            </p>
+          </div>
+          <button onClick={onCompare} className="cc-btn-primary">
+            {comparing ? <Loader small /> : "Compare Selected"}
+          </button>
+        </div>
+      </section>
+
       {loading ? (
         <div className="mt-10 flex justify-center">
           <Loader />
         </div>
       ) : (
-        <div className="grid gap-5">
+        <div className="mt-8 grid gap-5">
           {hospitals.map((hospital, index) => (
             <HospitalCard
               key={hospital.id || hospital._id}
@@ -99,8 +123,10 @@ export default function Hospitals() {
           ))}
         </div>
       )}
-      {compareData && <CompareModal data={compareData} onClose={() => setCompareData(null)} />}
+
+      {compareData && (
+        <CompareModal data={compareData} onClose={() => setCompareData(null)} />
+      )}
     </AppLayout>
   );
 }
-

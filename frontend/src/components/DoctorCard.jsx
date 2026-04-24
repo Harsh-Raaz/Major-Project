@@ -8,31 +8,68 @@ export default function DoctorCard({ doctor, bestMatch, onBook }) {
   const available = Math.max(max - current, 0);
 
   return (
-    <article className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-lg font-semibold text-blue-950">{doctor.name}</h3>
-          <p className="text-sm text-blue-700">{doctor.qualification}</p>
-        </div>
-        <div className="text-right">
-          {bestMatch && <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Best Match</span>}
-          <div className={`mt-2 rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(Number(doctor.score || 0))}`}>
-            Score {Math.round(Number(doctor.score || 0) * 100)}%
+    <article className="cc-surface relative overflow-hidden p-5 animate-fade-up">
+      <div className="absolute inset-y-0 left-0 w-1 bg-[#00B8A9]" />
+      <div className="pl-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-2xl font-semibold text-[#0A1628]">
+                {doctor.name}
+              </h3>
+              {bestMatch && (
+                <span className="animate-pulse-slow rounded-full bg-[#00B8A9] px-3 py-1 text-xs font-semibold text-white">
+                  Best Match
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-slate-600">{doctor.qualification}</p>
+          </div>
+          <div className="text-right">
+            <div
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(
+                Number(doctor.score || 0)
+              )}`}
+            >
+              Score {Math.round(Number(doctor.score || 0) * 100)}%
+            </div>
           </div>
         </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rating</p>
+            <p className="mt-2 font-semibold text-[#0A1628]">
+              {starText(doctor.rating || 4)} ({doctor.rating || 4})
+            </p>
+          </div>
+          <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Experience</p>
+            <p className="mt-2 font-semibold text-[#0A1628]">
+              {doctor.experience_years ?? doctor.experience ?? 0} years
+            </p>
+          </div>
+          <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Available today</p>
+            <p className="mt-2 font-semibold text-[#0A1628]">{available}</p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <ProgressBar value={load} />
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-600">{doctor.bio}</p>
+        {load > 75 && (
+          <p className="mt-3 rounded-full bg-[#fff7e6] px-3 py-1 text-sm font-semibold text-[#b86a00] inline-flex">
+            High patient load today
+          </p>
+        )}
+        <div className="mt-5">
+          <button onClick={onBook} className="cc-btn-primary">
+            Book Appointment
+          </button>
+        </div>
       </div>
-      <div className="mt-3 grid gap-2 text-sm text-blue-800 md:grid-cols-3">
-        <p>Rating: {starText(doctor.rating || 4)} ({doctor.rating || 4})</p>
-        <p>Experience: {doctor.experience_years ?? doctor.experience ?? 0} years</p>
-        <p>Available slots today: {available}</p>
-      </div>
-      <div className="mt-3">
-        <ProgressBar value={load} />
-      </div>
-      <p className="mt-3 text-sm text-blue-700">{doctor.bio}</p>
-      {load > 75 && <p className="mt-2 text-sm font-semibold text-orange-600">High patient load today</p>}
-      <button onClick={onBook} className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-white">Book Appointment</button>
     </article>
   );
 }
-

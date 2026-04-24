@@ -23,21 +23,51 @@ export default function Confirmation() {
     load();
   }, [hospitalId]);
 
-  const lat = hospital?.lat ?? fixedPatient.lat;
-  const lng = hospital?.lng ?? fixedPatient.lng;
+  const lat = hospital?.location?.lat ?? fixedPatient.lat;
+  const lng = hospital?.location?.lng ?? fixedPatient.lng;
   const mapsUrl = `https://www.google.com/maps/dir/${fixedPatient.lat},${fixedPatient.lng}/${lat},${lng}`;
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-2xl rounded-2xl border border-green-200 bg-white p-8 text-center shadow-sm">
-        <CheckCircle2 className="mx-auto h-14 w-14 text-green-600" />
-        <h2 className="mt-3 text-3xl font-bold text-green-700">Appointment Confirmed</h2>
-        <p className="mt-2 text-blue-900">{searchParams.get("doctor")} at {searchParams.get("hospital")}</p>
-        <p className="text-blue-700">Time: {searchParams.get("time")}</p>
-        <p className="mt-3 text-xl font-semibold text-blue-900">Estimated wait: {searchParams.get("wait")} minutes</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link to="/dashboard" className="rounded-lg bg-blue-600 px-4 py-2 text-white">View My Appointments</Link>
-          <a href={mapsUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-blue-200 px-4 py-2 text-blue-700">Get Directions</a>
+      <div className="mx-auto max-w-3xl animate-fade-up">
+        <div className="cc-surface overflow-hidden p-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F0FDF9]">
+            <CheckCircle2 className="h-10 w-10 text-[#00B8A9]" />
+          </div>
+          <p className="cc-eyebrow mx-auto mt-6 w-fit">Booking Confirmed</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold text-[#0A1628]">
+            Appointment secured successfully
+          </h2>
+          <p className="mt-4 text-lg text-slate-700">
+            {searchParams.get("doctor")} at {searchParams.get("hospital")}
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[20px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Time</p>
+              <p className="mt-2 font-display text-2xl text-[#0A1628]">
+                {searchParams.get("time")}
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-[rgba(245,158,11,0.18)] bg-[#fff7e6] p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Estimated wait</p>
+              <p className="mt-2 font-display text-2xl text-[#0A1628]">
+                {searchParams.get("wait")} minutes
+              </p>
+            </div>
+          </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link to="/dashboard" className="cc-btn-primary">
+              View My Appointments
+            </Link>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="cc-btn-secondary"
+            >
+              Get Directions
+            </a>
+          </div>
         </div>
       </div>
     </AppLayout>

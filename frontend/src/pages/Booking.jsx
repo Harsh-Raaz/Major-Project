@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import AppLayout from "../layouts/AppLayout";
 import Loader from "../components/Loader";
 import { classifyPriority } from "../api/ai";
 import { createAppointment } from "../api/appointment";
@@ -27,7 +28,6 @@ export default function Booking() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting:", { doctorId, slotId, hospitalId, department });
     if (!doctorId || !slotId || !hospitalId || hospitalId === "null" || hospitalId === "undefined") {
       return toast.error("Missing booking details. Please go back and select doctor again.");
     }
@@ -49,7 +49,7 @@ export default function Booking() {
           address: form.location,
         },
       });
-      const patientData = formatPatient(patientRes.data?.patient || null);
+      const patientData = patientRes.data?.patient || null;
       const patientId =
         patientRes.data?.id ||
         patientRes.data?.patient_id ||
@@ -79,20 +79,89 @@ export default function Booking() {
   };
 
   return (
-    <>
-      <h2 className="text-2xl font-bold">Patient Booking</h2>
-      <form onSubmit={onSubmit} className="mt-6 grid max-w-2xl gap-4 rounded-2xl border border-blue-100 bg-white p-6">
-        <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Full Name*" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input className="rounded-lg border border-blue-200 px-3 py-2" type="number" placeholder="Age*" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
-        <select className="rounded-lg border border-blue-200 px-3 py-2" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-          <option>Male</option><option>Female</option><option>Other</option>
-        </select>
-        <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Phone Number*" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Email (optional)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <input className="rounded-lg border border-blue-200 px-3 py-2" placeholder="Address*" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-        <button className="rounded-lg bg-blue-600 px-4 py-2 text-white">{loading ? <Loader small /> : "Book Appointment"}</button>
-      </form>
-    </>
+    <AppLayout>
+      <section className="mx-auto max-w-4xl animate-fade-up">
+        <div className="cc-surface mb-6 p-6 md:p-8">
+          <p className="cc-eyebrow">Appointment Intake</p>
+          <h2 className="cc-title mt-3">Complete the patient booking form</h2>
+          <p className="cc-muted mt-3">
+            We will register the patient profile, classify urgency, and confirm
+            the selected slot without changing the current booking flow.
+          </p>
+        </div>
+
+        <form
+          onSubmit={onSubmit}
+          className="cc-surface grid gap-4 p-6 md:grid-cols-2 md:p-8"
+        >
+          <label className="cc-field md:col-span-2">
+            <span>Full Name</span>
+            <input
+              placeholder="Patient full name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </label>
+          <label className="cc-field">
+            <span>Age</span>
+            <input
+              type="number"
+              placeholder="Age"
+              value={form.age}
+              onChange={(e) => setForm({ ...form, age: e.target.value })}
+            />
+          </label>
+          <label className="cc-field">
+            <span>Gender</span>
+            <select
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+            >
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label className="cc-field">
+            <span>Phone Number</span>
+            <input
+              placeholder="10-digit mobile number"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </label>
+          <label className="cc-field">
+            <span>Email</span>
+            <input
+              placeholder="Email address"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </label>
+          <label className="cc-field md:col-span-2">
+            <span>Address</span>
+            <input
+              placeholder="Street, area, city"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+          </label>
+          <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[rgba(0,184,169,0.15)] bg-[#F0FDF9] px-4 py-3">
+            <div>
+              <p className="font-display text-sm font-semibold text-[#0A1628]">
+                Selected priority
+              </p>
+              <p className="text-sm text-slate-600 capitalize">
+                {localPriority}
+              </p>
+            </div>
+            <button className="cc-btn-primary min-w-44 justify-center">
+              {loading ? <Loader small /> : "Book Appointment"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </AppLayout>
   );
 }
 

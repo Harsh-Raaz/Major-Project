@@ -1,15 +1,16 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { useAuth } from '../hooks/useAuth';
-import { validateLoginForm } from '../utils/validation';
-import Loader from '../components/Loader';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import { HeartPulse, ShieldCheck, Stethoscope } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import { validateLoginForm } from "../utils/validation";
+import Loader from "../components/Loader";
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -26,10 +27,10 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      toast.success('Login successful!');
-      navigate('/dashboard');
+      toast.success("Login successful!");
+      navigate("/dashboard");
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || "Login failed";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -37,74 +38,96 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-emerald-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-blue-900">Login</h1>
-        <p className="mt-2 text-blue-700">Sign in to your account</p>
+    <div className="grid min-h-screen lg:grid-cols-[0.95fr_1.05fr]">
+      <section className="cc-hero-grid relative hidden overflow-hidden px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div>
+          <p className="cc-eyebrow border-white/15 text-white/65">CrowdCare</p>
+          <h1 className="mt-5 font-display text-5xl font-bold leading-tight">
+            Clinical access designed for calmer patient journeys.
+          </h1>
+          <p className="mt-4 max-w-xl text-white/72">
+            Log in to manage appointments, receive wait-time updates, and keep
+            every care decision in one secure place.
+          </p>
+        </div>
+        <div className="grid gap-4">
+          {[HeartPulse, ShieldCheck, Stethoscope].map((Icon, index) => (
+            <div
+              key={index}
+              className="cc-glass flex items-center gap-4 rounded-[24px] p-4"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                <Icon size={22} />
+              </div>
+              <div>
+                <p className="font-display text-lg font-semibold">
+                  Precision-first care access
+                </p>
+                <p className="text-sm text-white/68">
+                  Real-time hospital discovery, booking, and patient updates.
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-blue-900">
-              Email
+      <section className="flex items-center justify-center bg-white px-4 py-10">
+        <div className="w-full max-w-md animate-fade-up">
+          <p className="cc-eyebrow">Welcome Back</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold text-[#0A1628]">
+            Sign in to CrowdCare
+          </h2>
+          <p className="mt-3 text-slate-600">
+            Continue to your dashboard and appointment timeline.
+          </p>
+
+          <form onSubmit={onSubmit} className="mt-8 space-y-5">
+            <label className="cc-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(event) => {
+                  setForm({ ...form, email: event.target.value });
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
+                placeholder="your@email.com"
+              />
+              {errors.email && (
+                <p className="text-sm text-red-600">{errors.email}</p>
+              )}
             </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => {
-                setForm({ ...form, email: event.target.value });
-                if (errors.email) setErrors({ ...errors, email: '' });
-              }}
-              className={`mt-2 w-full rounded-lg border px-4 py-2 outline-none ring-blue-300 focus:ring-2 ${
-                errors.email
-                  ? 'border-red-300 bg-red-50'
-                  : 'border-blue-200 bg-white'
-              }`}
-              placeholder="your@email.com"
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-blue-900">
-              Password
+            <label className="cc-field">
+              <span>Password</span>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(event) => {
+                  setForm({ ...form, password: event.target.value });
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
+                placeholder="********"
+              />
+              {errors.password && (
+                <p className="text-sm text-red-600">{errors.password}</p>
+              )}
             </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => {
-                setForm({ ...form, password: event.target.value });
-                if (errors.password) setErrors({ ...errors, password: '' });
-              }}
-              className={`mt-2 w-full rounded-lg border px-4 py-2 outline-none ring-blue-300 focus:ring-2 ${
-                errors.password
-                  ? 'border-red-300 bg-red-50'
-                  : 'border-blue-200 bg-white'
-              }`}
-              placeholder="********"
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? <Loader small /> : 'Login'}
-          </button>
-        </form>
+            <button type="submit" disabled={loading} className="cc-btn-primary w-full justify-center">
+              {loading ? <Loader small /> : "Login"}
+            </button>
+          </form>
 
-        <p className="mt-6 text-center text-blue-700">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-semibold text-blue-600 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
+          <p className="mt-6 text-center text-slate-600">
+            Don&apos;t have an account?{" "}
+            <Link to="/signup" className="font-semibold text-[#00B8A9] hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
