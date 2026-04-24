@@ -8,7 +8,7 @@ export const scoreClass = (score = 0) => {
 
 export const starText = (rating = 0) => {
   const rounded = Math.round(Number(rating || 0));
-  return `${'★'.repeat(rounded)}${'☆'.repeat(Math.max(5 - rounded, 0))}`;
+  return `${'*'.repeat(rounded)}${'-'.repeat(Math.max(5 - rounded, 0))}`;
 };
 
 export const fallbackPriority = (symptoms = '') => {
@@ -25,12 +25,12 @@ export const fallbackPriority = (symptoms = '') => {
 export const normalizeAppointment = (a = {}) => ({
   ...a,
   id: a._id || a.id,
-  doctor_name: a.doctor_id?.name || a.doctor_name || '—',
-  department: a.doctor_id?.department || a.department || '—',
-  hospital_name: a.hospital_id?.name || a.hospital_name || '—',
-  date: a.slot_id?.date || a.date || '—',
+  doctor_name: a.doctor_id?.name || a.doctor_name || '-',
+  department: a.doctor_id?.department || a.department || '-',
+  hospital_name: a.hospital_id?.name || a.hospital_name || '-',
+  date: a.slot_id?.date || a.date || '-',
   time: a.slot_id
-    ? `${a.slot_id.start_time} – ${a.slot_id.end_time}`
-    : a.time || '—',
+    ? `${a.slot_id.start_time} - ${a.slot_id.end_time}`
+    : a.time || '-',
   doctor_id: a.doctor_id?._id || a.doctor_id,
 });

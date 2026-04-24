@@ -1,13 +1,16 @@
 import Modal from "./Modal";
 
 export default function CompareModal({ data, onClose }) {
-  const hospitals = Array.isArray(data?.hospitals)
-    ? data.hospitals
-    : Array.isArray(data?.comparison)
-      ? data.comparison
-      : Array.isArray(data)
-        ? data
-        : [];
+  const hospitals = Array.isArray(data) ? data : data?.hospitals || data?.comparison || [];
+  const [firstHospital, secondHospital] = hospitals;
+
+  if (!firstHospital || !secondHospital) {
+    return (
+      <Modal title="Hospital Comparison" onClose={onClose}>
+        <p className="text-sm text-blue-700">No comparison data available</p>
+      </Modal>
+    );
+  }
 
   return (
     <Modal title="Hospital Comparison" onClose={onClose}>
@@ -21,11 +24,27 @@ export default function CompareModal({ data, onClose }) {
               <h4 className="font-display text-xl font-semibold text-[#0A1628]">
                 {hospital.name}
               </h4>
-              <p className="mt-2 text-sm text-slate-600">{hospital.address}</p>
+              <p className="mt-2 text-sm text-slate-600">
+                {[
+                  hospital.location?.address || hospital.address,
+                  hospital.location?.city,
+                ]
+                  .filter(Boolean)
+                  .join(", ") || "Address unavailable"}
+              </p>
               <div className="mt-4 grid gap-2 text-sm text-slate-700">
-                <p>Rating: {hospital.rating ?? "-"}</p>
+                <p>Rating: {hospital.rating?.overall ?? hospital.rating ?? "-"}</p>
                 <p>Distance: {hospital.distance_km ?? hospital.distance ?? "-"} km</p>
+                <p>Departments: {(hospital.departments || []).join(", ") || "-"}</p>
+                <p>Available Doctors: {hospital.available_doctors_count ?? "-"}</p>
                 <p>Slots Today: {hospital.available_slots_today ?? "-"}</p>
+                <p>
+                  Avg Doctor Rating:{" "}
+                  {hospital.average_doctor_rating?.toFixed?.(1) ??
+                    hospital.average_doctor_rating ??
+                    "-"}
+                </p>
+                <p>Contact: {hospital.contact || "-"}</p>
                 <p>Score: {hospital.score ?? "-"}</p>
               </div>
             </div>

@@ -1,4 +1,8 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* KEEP existing custom CSS below this */
 
 :root {
   --cc-dark: #0a1628;
@@ -8,28 +12,6 @@
   --cc-surface: #ffffff;
   --cc-line: rgba(0, 184, 169, 0.15);
   --cc-shadow: 0 4px 24px rgba(0, 184, 169, 0.08);
-}
-
-@theme {
-  --color-brand-dark: #0a1628;
-  --color-brand-teal: #00b8a9;
-  --color-brand-mint: #f0fdf9;
-  --color-brand-amber: #f59e0b;
-  --font-display: "Sora", sans-serif;
-  --font-body: "DM Sans", sans-serif;
-  --animate-fade-up: fadeUp 0.4s ease-out;
-  --animate-pulse-slow: pulse 3s infinite;
-
-  @keyframes fadeUp {
-    0% {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
 }
 
 * {
@@ -51,11 +33,37 @@ body {
   min-height: 100vh;
 }
 
+.font-display {
+  font-family: "Sora", sans-serif;
+}
+
+.animate-fade-up {
+  animation: cc-fade-up 0.4s ease-out both;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s infinite;
+}
+
 .cc-surface {
   border: 1px solid var(--cc-line);
   border-radius: 16px;
   background: var(--cc-surface);
   box-shadow: var(--cc-shadow);
+}
+
+.cc-glass {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 45px rgba(10, 22, 40, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.cc-hero-grid {
+  background:
+    radial-gradient(circle at top left, rgba(0, 184, 169, 0.22), transparent 32%),
+    radial-gradient(circle at right center, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(120deg, #063842 0%, #0a1628 38%, #112640 100%);
 }
 
 .cc-title {
@@ -66,21 +74,59 @@ body {
   font-weight: 700;
 }
 
+.cc-muted {
+  color: #64748b;
+}
+
 .cc-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding-bottom: 0.5rem;
+  gap: 0.45rem;
+  border-bottom: 1px solid rgba(0, 184, 169, 0.12);
+  padding-bottom: 0.55rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #5f6f81;
+}
+
+.cc-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cc-field > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #64748b;
 }
 
-.cc-muted {
-  color: #64748b;
+.cc-field input,
+.cc-field select,
+.cc-field textarea {
+  width: 100%;
+  border: 1px solid rgba(0, 184, 169, 0.15);
+  border-radius: 18px;
+  background: #fff;
+  padding: 0.95rem 1rem;
+  color: var(--cc-dark);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cc-field input::placeholder,
+.cc-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+.cc-field input:focus,
+.cc-field select:focus,
+.cc-field textarea:focus {
+  border-color: rgba(0, 184, 169, 0.55);
+  box-shadow: 0 0 0 3px rgba(0, 184, 169, 0.12);
 }
 
 .cc-btn-primary,
@@ -92,19 +138,17 @@ body {
   border-radius: 999px;
   padding: 0.85rem 1.3rem;
   font-weight: 700;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.cc-btn-primary:hover,
-.cc-btn-secondary:hover,
-.cc-btn-danger:hover {
-  transform: scale(1.02);
+  transition: all 0.2s ease;
 }
 
 .cc-btn-primary {
   background: var(--cc-teal);
   color: white;
   box-shadow: 0 14px 28px rgba(0, 184, 169, 0.24);
+}
+
+.cc-btn-primary:hover {
+  transform: translateY(-1px);
 }
 
 .cc-btn-secondary {
@@ -119,48 +163,14 @@ body {
   color: #dc2626;
 }
 
-.cc-field {
-  display: grid;
-  gap: 0.55rem;
-}
+@keyframes cc-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
 
-.cc-field span {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--cc-dark);
-}
-
-.cc-field input,
-.cc-field select,
-.cc-field textarea {
-  width: 100%;
-  border-radius: 16px;
-  border: 1px solid var(--cc-line);
-  background: #fbfffe;
-  padding: 0.95rem 1rem;
-  font: inherit;
-  color: var(--cc-dark);
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.cc-field input:focus,
-.cc-field select:focus,
-.cc-field textarea:focus {
-  border-color: rgba(0, 184, 169, 0.45);
-  box-shadow: 0 0 0 4px rgba(0, 184, 169, 0.12);
-}
-
-.cc-hero-grid {
-  background:
-    radial-gradient(circle at top left, rgba(0, 184, 169, 0.2), transparent 30%),
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 20%),
-    radial-gradient(circle at bottom, rgba(255, 255, 255, 0.08), transparent 35%),
-    linear-gradient(135deg, #081221 0%, #10233a 55%, #0e1b2f 100%);
-}
-
-.cc-glass {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px);
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

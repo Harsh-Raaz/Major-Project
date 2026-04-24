@@ -36,10 +36,10 @@ export default function Profile() {
     <AppLayout>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm">
+          <div className="cc-surface p-6">
             <div className="mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-blue-400 to-emerald-400" />
-            <h2 className="text-2xl font-bold text-blue-950">{user?.name}</h2>
-            <p className="mt-1 text-blue-700">
+            <h2 className="text-2xl font-bold text-[#0A1628]">{user?.name}</h2>
+            <p className="mt-1 text-slate-600">
               {user?.role === 'admin' ? 'Administrator' : 'Patient'}
             </p>
 
@@ -47,8 +47,8 @@ export default function Profile() {
               <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-3">
                 <Mail size={20} className="text-blue-600" />
                 <div>
-                  <p className="text-xs text-blue-600">Email</p>
-                  <p className="text-sm font-semibold text-blue-900">
+                  <p className="text-xs text-slate-600">Email</p>
+                  <p className="text-sm font-semibold text-[#0A1628]">
                     {user?.email}
                   </p>
                 </div>
@@ -56,8 +56,8 @@ export default function Profile() {
               <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-3">
                 <Phone size={20} className="text-blue-600" />
                 <div>
-                  <p className="text-xs text-blue-600">Phone</p>
-                  <p className="text-sm font-semibold text-blue-900">
+                  <p className="text-xs text-slate-600">Phone</p>
+                  <p className="text-sm font-semibold text-[#0A1628]">
                     {user?.phone}
                   </p>
                 </div>
@@ -65,8 +65,8 @@ export default function Profile() {
               <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-3">
                 <User size={20} className="text-blue-600" />
                 <div>
-                  <p className="text-xs text-blue-600">Member Since</p>
-                  <p className="text-sm font-semibold text-blue-900">
+                  <p className="text-xs text-slate-600">Member Since</p>
+                  <p className="text-sm font-semibold text-[#0A1628]">
                     {user?.createdAt
                       ? new Date(user.createdAt).toLocaleDateString()
                       : 'N/A'}
@@ -78,8 +78,8 @@ export default function Profile() {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-blue-950">
+          <div className="cc-surface p-6">
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-[#0A1628]">
               <Calendar size={20} />
               Recent Appointments
             </h3>
@@ -95,18 +95,18 @@ export default function Profile() {
                     key={appointment.id || appointment._id}
                     className="rounded-lg border border-blue-100 p-4"
                   >
-                    <p className="font-semibold text-blue-950">
+                    <p className="font-semibold text-[#0A1628]">
                       {appointment.doctor_name} - {appointment.department}
                     </p>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-slate-600">
                       {appointment.hospital_name}
                     </p>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-slate-600">
                       {appointment.date} {appointment.time}
                     </p>
                     <p className="mt-2 text-xs">
                       Status:{' '}
-                      <span className="font-semibold text-blue-900">
+                      <span className="font-semibold text-[#0A1628]">
                         {appointment.status || 'confirmed'}
                       </span>
                     </p>
@@ -114,7 +114,7 @@ export default function Profile() {
                 ))}
               </div>
             ) : (
-              <p className="py-8 text-center text-blue-700">
+              <p className="py-8 text-center text-slate-600">
                 No appointments yet
               </p>
             )}

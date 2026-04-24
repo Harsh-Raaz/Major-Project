@@ -14,6 +14,29 @@ const normalizeSlotsResponse = (data) => {
   return [];
 };
 
+const getDateOptions = () =>
+  Array.from({ length: 4 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    return date.toISOString().slice(0, 10);
+  });
+
+const formatDateLabel = (dateStr) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrow = tomorrowDate.toISOString().slice(0, 10);
+
+  if (dateStr === today) return "Today";
+  if (dateStr === tomorrow) return "Tomorrow";
+
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+};
+
 export default function Slots() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,15 +51,22 @@ export default function Slots() {
   const [slots, setSlots] = useState([]);
   const [selected, setSelected] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(getDateOptions()[0]);
 
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
     const load = async () => {
       setLoading(true);
+      setSelected(null);
       let fetchedSlots = [];
       try {
-        const res = await getSlots(id, today);
+        const res = await getSlots(id, selectedDate);
         fetchedSlots = normalizeSlotsResponse(res.data);
+        const today = new Date().toISOString().slice(0, 10);
+        const currentTime = new Date().toTimeString().slice(0, 5);
+        fetchedSlots = fetchedSlots.filter((slot) => {
+          if (selectedDate !== today) return true;
+          return slot.end_time > currentTime;
+        });
         setSlots(fetchedSlots);
       } catch {
         toast.error("Failed loading slots");
@@ -56,7 +86,7 @@ export default function Slots() {
       }
     };
     load();
-  }, [id]);
+  }, [id, selectedDate]);
 
   const wait = selected
     ? Number(selected.current_bookings || 0) * (avgMins + 3)
@@ -77,11 +107,41 @@ export default function Slots() {
           {doctorName}
         </h2>
         <p className="mt-2 text-slate-600">{hospital}</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {getDateOptions().map((date) => (
+            <button
+              key={date}
+              type="button"
+              onClick={() => setSelectedDate(date)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                selectedDate === date
+                  ? "bg-[#0A1628] text-white shadow-md"
+                  : "border border-[rgba(0,184,169,0.15)] bg-white text-slate-700 hover:bg-[#F0FDF9]"
+              }`}
+            >
+              {formatDateLabel(date)}
+            </button>
+          ))}
+        </div>
       </section>
-
       {loading ? (
         <div className="mt-8 flex justify-center">
           <Loader />
+        </div>
+      ) : slots.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-blue-100 bg-white p-6 text-center shadow-sm">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-4xl">
+            :(
+          </div>
+          <p className="mt-4 text-xl font-semibold text-blue-950">No slots available for this date.</p>
+          <p className="mt-2 text-blue-700">Please try another day or choose a different doctor.</p>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-white"
+          >
+            Go Back
+          </button>
         </div>
       ) : (
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -118,9 +178,8 @@ export default function Slots() {
                 doctorName,
                 hospital: hospital || "",
                 department: department || "",
-                time:
-                  selected.time_range ||
-                  `${selected.start_time} - ${selected.end_time}`,
+                time: selected.time_range || `${selected.start_time} - ${selected.end_time}`,
+                date: selectedDate,
                 symptoms,
                 wait: String(wait),
               });

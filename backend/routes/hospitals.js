@@ -4,7 +4,7 @@ const Hospital = require('../models/Hospital');
 
 router.get('/', async (req, res) => {
   try {
-    const hospitals = await Hospital.find({ is_active: true });
+    const hospitals = await Hospital.find();
     res.json(hospitals);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -32,10 +32,7 @@ router.post('/compare', async (req, res) => {
           date: today,
           status: { $ne: 'full' }
         });
-        const availableDoctors = await Doctor.find({
-          hospital_id: hospitalId,
-          available: true
-        });
+        const availableDoctors = await Doctor.find({ hospital_id: hospitalId });
         const avgDoctorRating =
           availableDoctors.length > 0
             ? availableDoctors.reduce((s, d) => s + (d.rating || 0), 0) /
@@ -80,10 +77,21 @@ router.get('/:id/route', async (req, res) => {
 
     const patientLat = parseFloat(req.query.patient_lat);
     const patientLng = parseFloat(req.query.patient_lng);
+    if (Number.isNaN(patientLat) || Number.isNaN(patientLng)) {
+      return res.status(400).json({
+        message: 'patient_lat and patient_lng are required'
+      });
+    }
     const R = 6371;
     const PI = Math.PI;
-    const hLat = hospital.location.lat;
-    const hLng = hospital.location.lng;
+    const hLat = hospital.location && hospital.location.lat;
+    const hLng = hospital.location && hospital.location.lng;
+
+    if (!Number.isFinite(hLat) || !Number.isFinite(hLng)) {
+      return res.status(400).json({
+        message: 'Hospital location coordinates are not available'
+      });
+    }
 
     const dLat = ((hLat - patientLat) * PI) / 180;
     const dLng = ((hLng - patientLng) * PI) / 180;

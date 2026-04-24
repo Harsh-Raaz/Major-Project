@@ -68,7 +68,7 @@ export default function Hospitals() {
 
   const onViewDoctors = (hospital) => {
     addToSearchHistory({
-      id: hospital.id || hospital._id,
+      id: hospital._id || hospital.id,
       name: hospital.name,
       type: "hospital",
       department,
@@ -77,12 +77,16 @@ export default function Hospitals() {
     });
 
     navigate(
-      `/doctors/${hospital.id || hospital._id}?hospital=${encodeURIComponent(
+      `/doctors/${hospital._id || hospital.id}?hospital=${encodeURIComponent(
         hospital.name
       )}&department=${encodeURIComponent(department)}&symptoms=${encodeURIComponent(
         symptoms
       )}`
     );
+  };
+
+  const onGetRoute = (hospital) => {
+    navigate(`/route/${hospital._id || hospital.id}`);
   };
 
   return (
@@ -112,13 +116,13 @@ export default function Hospitals() {
         <div className="mt-8 grid gap-5">
           {hospitals.map((hospital, index) => (
             <HospitalCard
-              key={hospital.id || hospital._id}
+              key={hospital._id || hospital.id}
               hospital={hospital}
               recommended={index === 0}
-              checked={selected.includes(hospital.id || hospital._id)}
+              checked={selected.includes(hospital._id || hospital.id)}
               onToggleCompare={toggleCompare}
               onViewDoctors={() => onViewDoctors(hospital)}
-              onRoute={() => navigate(`/route/${hospital.id || hospital._id}`)}
+              onRoute={() => onGetRoute(hospital)}
             />
           ))}
         </div>

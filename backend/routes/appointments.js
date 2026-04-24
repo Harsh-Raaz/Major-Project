@@ -27,6 +27,43 @@ function normalizePriority(priority) {
   return ['normal', 'urgent', 'emergency'].includes(value) ? value : 'normal';
 }
 
+async function autoCompleteExpiredAppointments() {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const currentTime = now.toTimeString().slice(0, 5);
+
+  const expiredSlots = await Slot.find({
+    $or: [
+      { date: { $lt: todayStr } },
+      { date: todayStr, end_time: { $lte: currentTime } }
+    ]
+  });
+
+  if (expiredSlots.length === 0) {
+    return 0;
+  }
+
+  const expiredSlotIds = expiredSlots.map((slot) => slot._id);
+  const result = await Appointment.updateMany(
+    {
+      slot_id: { $in: expiredSlotIds },
+      status: { $in: ['confirmed', 'rescheduled'] }
+    },
+    { $set: { status: 'completed' } }
+  );
+
+  return result.modifiedCount || 0;
+}
+
+router.get('/autocomplete', async (req, res) => {
+  try {
+    const completedCount = await autoCompleteExpiredAppointments();
+    res.json({ completed_count: completedCount });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -242,3 +279,4 @@ router.get('/:id/followup', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.autoCompleteExpiredAppointments = autoCompleteExpiredAppointments;

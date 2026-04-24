@@ -10,7 +10,10 @@ export default function HospitalCard({
   onRoute,
 }) {
   const id = hospital.id || hospital._id;
-
+  const address =
+    hospital.address ||
+    [hospital.location?.address, hospital.location?.city].filter(Boolean).join(", ");
+  const rating = hospital.rating?.overall ?? hospital.rating ?? 4;
   return (
     <article className="cc-surface relative overflow-hidden p-5 animate-fade-up">
       <div className="absolute inset-y-0 left-0 w-1 bg-[#00B8A9]" />
@@ -28,7 +31,7 @@ export default function HospitalCard({
           </div>
           <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
             <MapPin size={15} className="text-[#00B8A9]" />
-            {hospital.address}
+            {address || "Address unavailable"}
           </p>
         </div>
         <span
@@ -44,7 +47,7 @@ export default function HospitalCard({
         <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
           <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rating</p>
           <p className="mt-2 font-semibold text-[#0A1628]">
-            {starText(hospital.rating || 4)} ({hospital.rating || 4})
+            {starText(rating)} ({rating})
           </p>
         </div>
         <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">

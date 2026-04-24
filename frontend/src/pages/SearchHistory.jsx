@@ -39,15 +39,15 @@ export default function SearchHistory() {
       <div>
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-blue-950">Search History</h2>
-            <p className="mt-2 text-blue-700">
+            <h2 className="text-2xl font-bold text-[#0A1628]">Search History</h2>
+            <p className="mt-2 text-slate-600">
               Recently viewed hospitals and doctors
             </p>
           </div>
           {history.length > 0 && (
             <button
               onClick={handleClearHistory}
-              className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+              className="cc-btn-secondary flex items-center gap-2"
             >
               <Trash2 size={16} />
               Clear History
@@ -61,7 +61,7 @@ export default function SearchHistory() {
               <div
                 key={index}
                 onClick={() => handleViewResult(item)}
-                className="cursor-pointer rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:shadow-md"
+                className="cc-surface cursor-pointer p-5 transition hover:shadow-md"
               >
                 <div className="mb-3 flex items-center gap-2">
                   {item.type === 'hospital' ? (
@@ -69,30 +69,30 @@ export default function SearchHistory() {
                   ) : (
                     <Stethoscope size={20} className="text-emerald-600" />
                   )}
-                  <span className="text-xs font-semibold uppercase text-blue-600">
+                  <span className="text-xs font-semibold uppercase text-slate-600">
                     {item.type}
                   </span>
                 </div>
-                <h3 className="font-bold text-blue-950">{item.name}</h3>
+                <h3 className="font-bold text-[#0A1628]">{item.name}</h3>
                 {item.department && (
-                  <p className="text-sm text-blue-700">{item.department}</p>
+                  <p className="text-sm text-slate-600">{item.department}</p>
                 )}
                 {item.rating && (
-                  <p className="text-sm text-blue-600">Rating: * {item.rating}</p>
+                  <p className="text-sm text-slate-600">Rating: * {item.rating}</p>
                 )}
-                <p className="mt-3 text-xs text-blue-500">
+                <p className="mt-3 text-xs text-slate-600">
                   Viewed: {new Date(item.timestamp).toLocaleDateString()}
                 </p>
               </div>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border-2 border-dashed border-blue-100 p-8 text-center">
+          <div className="cc-surface border-2 border-dashed border-blue-100 p-8 text-center">
             <AlertCircle size={40} className="mx-auto mb-3 text-blue-400" />
-            <p className="text-lg font-semibold text-blue-900">
+            <p className="text-lg font-semibold text-[#0A1628]">
               No search history
             </p>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-slate-600">
               Start searching for hospitals to see them here
             </p>
           </div>

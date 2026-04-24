@@ -49,8 +49,8 @@ export default function Waitlist() {
   return (
     <AppLayout>
       <div>
-        <h2 className="text-2xl font-bold text-blue-950">Waitlist</h2>
-        <p className="mt-2 text-blue-700">
+        <h2 className="text-2xl font-bold text-[#0A1628]">Waitlist</h2>
+        <p className="mt-2 text-slate-600">
           View all appointments you're waiting for
         </p>
 
@@ -73,13 +73,13 @@ export default function Waitlist() {
                         Position #{item.position || 'Unknown'}
                       </h3>
                     </div>
-                    <p className="font-semibold text-blue-950">
+                    <p className="font-semibold text-[#0A1628]">
                       {item.doctor_name || item.doctor_id?.name || 'Doctor'}
                     </p>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-slate-600">
                       {item.hospital_name || item.hospital_id?.name || 'Hospital'}
                     </p>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-sm text-slate-600">
                       {item.date || item.slot_id?.date || 'TBD'}
                     </p>
                     <div className="mt-2 flex gap-2">
@@ -90,7 +90,7 @@ export default function Waitlist() {
                   </div>
                   <button
                     onClick={() => removeFromWaitlist(item.id || item._id)}
-                    className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                    className="cc-btn-secondary"
                   >
                     Remove
                   </button>
@@ -99,12 +99,12 @@ export default function Waitlist() {
             ))}
           </div>
         ) : (
-          <div className="mt-10 rounded-xl border-2 border-dashed border-blue-100 p-8 text-center">
+          <div className="cc-surface mt-10 border-2 border-dashed border-blue-100 p-8 text-center">
             <AlertCircle size={40} className="mx-auto mb-3 text-blue-400" />
-            <p className="text-lg font-semibold text-blue-900">
+            <p className="text-lg font-semibold text-[#0A1628]">
               No waitlist items
             </p>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-slate-600">
               You're not waiting for any appointments
             </p>
           </div>

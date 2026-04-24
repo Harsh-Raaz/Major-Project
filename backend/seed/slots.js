@@ -3,12 +3,18 @@ const mongoose = require('mongoose');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
 
-const SLOT_TIMES = [
-  ['09:00', '10:00'],
-  ['10:00', '11:00'],
-  ['11:00', '12:00'],
-  ['14:00', '15:00'],
-  ['15:00', '16:00']
+const timeSlots = [
+  { start: '09:00', end: '10:00' },
+  { start: '10:00', end: '11:00' },
+  { start: '11:00', end: '12:00' },
+  { start: '12:00', end: '13:00' },
+  { start: '13:00', end: '14:00' },
+  { start: '14:00', end: '15:00' },
+  { start: '15:00', end: '16:00' },
+  { start: '16:00', end: '17:00' },
+  { start: '17:00', end: '18:00' },
+  { start: '18:00', end: '19:00' },
+  { start: '19:00', end: '20:00' }
 ];
 
 function formatDate(date) {
@@ -26,37 +32,42 @@ function buildUpcomingDates(daysAhead = 7) {
 }
 
 async function seedSlots() {
-  await Slot.deleteMany({});
-
   const doctors = await Doctor.find({});
   const dates = buildUpcomingDates();
-  const slots = [];
+  let createdCount = 0;
 
-  doctors.forEach((doctor) => {
-    dates.forEach((date) => {
-      SLOT_TIMES.forEach(([start_time, end_time]) => {
-        slots.push({
+  for (const date of dates) {
+    for (const doctor of doctors) {
+      for (const { start, end } of timeSlots) {
+        const exists = await Slot.findOne({
+          doctor_id: doctor._id,
+          date,
+          start_time: start
+        });
+
+        if (exists) {
+          continue;
+        }
+
+        await Slot.create({
           doctor_id: doctor._id,
           hospital_id: doctor.hospital_id,
           date,
-          start_time,
-          end_time,
+          start_time: start,
+          end_time: end,
           capacity: 5,
           current_bookings: 0,
           status: 'available',
           duration_mins: 60
         });
-      });
-    });
-  });
-
-  if (slots.length) {
-    await Slot.insertMany(slots);
+        createdCount += 1;
+      }
+    }
   }
 
   return {
     doctors: doctors.length,
-    slots: slots.length,
+    slots: createdCount,
     dates
   };
 }

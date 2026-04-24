@@ -23,6 +23,7 @@ export default function Booking() {
   const department = searchParams.get("department");
   const symptoms = searchParams.get("symptoms") || "";
   const time = searchParams.get("time");
+  const date = searchParams.get("date");
   const wait = searchParams.get("wait");
   const localPriority = useMemo(() => fallbackPriority(symptoms), [symptoms]);
 
@@ -69,7 +70,7 @@ export default function Booking() {
       navigate(
         `/confirm?doctor=${encodeURIComponent(doctorName)}&hospital=${encodeURIComponent(hospital)}&time=${encodeURIComponent(
           time,
-        )}&wait=${wait}&hospitalId=${hospitalId}`,
+        )}&date=${encodeURIComponent(date || "")}&wait=${wait}&hospitalId=${hospitalId}`,
       );
     } catch (error) {
       toast.error(error.response?.data?.message || "Booking failed");
@@ -88,6 +89,12 @@ export default function Booking() {
             We will register the patient profile, classify urgency, and confirm
             the selected slot without changing the current booking flow.
           </p>
+          {date && time && (
+            <p className="mt-4 text-sm font-medium text-[#007f73]">
+              Appointment on <span className="font-semibold">{date}</span> at{" "}
+              <span className="font-semibold">{time}</span>
+            </p>
+          )}
         </div>
 
         <form

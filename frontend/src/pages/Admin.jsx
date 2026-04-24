@@ -205,9 +205,9 @@ export default function Admin() {
         </h3>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           {[
-            { key: 'top_peak_hours', label: 'Top Peak Hours' },
-            { key: 'top_peak_days', label: 'Top Peak Days' },
-            { key: 'top_peak_departments', label: 'Top Peak Departments' },
+            { key: 'peak_hours', label: 'Top Peak Hours' },
+            { key: 'peak_days', label: 'Top Peak Days' },
+            { key: 'peak_departments', label: 'Top Peak Departments' },
           ].map((item) => (
             <div
               key={item.key}
@@ -217,7 +217,7 @@ export default function Admin() {
               <ul className="mt-2 list-disc pl-5 text-sm">
                 {(busy[item.key] || []).slice(0, 3).map((value, index) => (
                   <li key={index}>
-                    {value.hour || value.day || value.department || value}
+                    {value.hour ?? value.day ?? value.department ?? String(value)}
                   </li>
                 ))}
               </ul>

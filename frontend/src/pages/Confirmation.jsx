@@ -9,6 +9,8 @@ export default function Confirmation() {
   const [searchParams] = useSearchParams();
   const hospitalId = searchParams.get("hospitalId");
   const [hospital, setHospital] = useState(null);
+  const [originLat, setOriginLat] = useState(fixedPatient.lat);
+  const [originLng, setOriginLng] = useState(fixedPatient.lng);
 
   useEffect(() => {
     const load = async () => {
@@ -23,9 +25,18 @@ export default function Confirmation() {
     load();
   }, [hospitalId]);
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        setOriginLat(pos.coords.latitude);
+        setOriginLng(pos.coords.longitude);
+      });
+    }
+  }, []);
+
   const lat = hospital?.location?.lat ?? fixedPatient.lat;
   const lng = hospital?.location?.lng ?? fixedPatient.lng;
-  const mapsUrl = `https://www.google.com/maps/dir/${fixedPatient.lat},${fixedPatient.lng}/${lat},${lng}`;
+  const mapsUrl = `https://www.google.com/maps/dir/${originLat},${originLng}/${lat},${lng}`;
 
   return (
     <AppLayout>

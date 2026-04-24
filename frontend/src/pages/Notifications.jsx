@@ -45,12 +45,12 @@ export default function Notifications() {
       <div>
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-blue-950">Notifications</h2>
-            <p className="mt-2 text-blue-700">
+            <h2 className="text-2xl font-bold text-[#0A1628]">Notifications</h2>
+            <p className="mt-2 text-slate-600">
               Stay updated with your appointments and reminders
             </p>
           </div>
-          <div className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
+          <div className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-slate-600">
             {notifications.length - readNotifications.size} new
           </div>
         </div>
@@ -99,17 +99,17 @@ export default function Notifications() {
                       <div className="flex-1">
                         <p
                           className={`font-semibold ${
-                            isRead ? 'text-blue-700' : 'text-blue-950'
+                            isRead ? 'text-slate-600' : 'text-[#0A1628]'
                           }`}
                         >
                           {notification.title || notification.message}
                         </p>
                         {notification.message && notification.title && (
-                          <p className="mt-1 text-sm text-blue-700">
+                          <p className="mt-1 text-sm text-slate-600">
                             {notification.message}
                           </p>
                         )}
-                        <p className="mt-2 text-xs text-blue-600">
+                        <p className="mt-2 text-xs text-slate-600">
                           {new Date().toLocaleTimeString()}
                         </p>
                       </div>
@@ -119,7 +119,7 @@ export default function Notifications() {
                       {!isRead && (
                         <button
                           onClick={() => markAsRead(index)}
-                          className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                          className="cc-btn-primary px-3 py-1 text-xs"
                         >
                           Mark read
                         </button>
@@ -137,10 +137,10 @@ export default function Notifications() {
             })}
           </div>
         ) : (
-          <div className="rounded-xl border-2 border-dashed border-blue-100 p-8 text-center">
+          <div className="cc-surface border-2 border-dashed border-blue-100 p-8 text-center">
             <Bell size={40} className="mx-auto mb-3 text-blue-400" />
-            <p className="text-lg font-semibold text-blue-900">All caught up!</p>
-            <p className="text-sm text-blue-700">
+            <p className="text-lg font-semibold text-[#0A1628]">All caught up!</p>
+            <p className="text-sm text-slate-600">
               You have no notifications at the moment
             </p>
           </div>

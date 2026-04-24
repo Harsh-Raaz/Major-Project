@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import AppLayout from "../layouts/AppLayout";
 import Loader from "../components/Loader";
-import { getHospitalRoute } from "../api/hospital";
-import { fixedPatient } from "../utils/helpers";
+import { getHospital, getHospitalRoute } from "../api/hospital";
+
+const getHospitalCoordinates = (route) => {
+  const hospitalLocation = route?.hospital?.location || {};
+  const coordinates = hospitalLocation.coordinates;
+  const lat = Number(route?.hospital_lat ?? coordinates?.[1] ?? route?.hospital?.lat ?? hospitalLocation.lat ?? route?.hospital?.latitude);
+  const lng = Number(route?.hospital_lng ?? coordinates?.[0] ?? route?.hospital?.lng ?? hospitalLocation.lng ?? route?.hospital?.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+};
 
 export default function RoutePage() {
   const { id } = useParams();
@@ -13,21 +26,53 @@ export default function RoutePage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      try {
-        const res = await getHospitalRoute(id, fixedPatient.lat, fixedPatient.lng);
-        setRoute(res.data);
-      } finally {
-        setLoading(false);
+      if (!navigator.geolocation) {
+        toast.error("Geolocation is not supported by your browser");
+        try {
+          const res = await getHospital(id);
+          setRoute({ hospital: res.data });
+        } finally {
+          setLoading(false);
+        }
+        return;
       }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await getHospitalRoute(id, latitude, longitude);
+            setRoute(res.data);
+          } finally {
+            setLoading(false);
+          }
+        },
+        async () => {
+          toast.error("Could not get your location. Please allow location access.");
+          try {
+            const res = await getHospital(id);
+            setRoute({ hospital: res.data });
+          } finally {
+            setLoading(false);
+          }
+        },
+      );
     };
     load();
   }, [id]);
 
   if (loading) return <AppLayout><div className="mt-10 flex justify-center"><Loader /></div></AppLayout>;
 
-  const lat = route?.hospital_lat || route?.hospital?.lat || fixedPatient.lat;
-  const lng = route?.hospital_lng || route?.hospital?.lng || fixedPatient.lng;
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.02},${lat - 0.02},${lng + 0.02},${lat + 0.02}&layer=mapnik&marker=${lat},${lng}`;
+  const hospitalLocation = route?.hospital?.location || {};
+  const destination = getHospitalCoordinates(route);
+  const lat = destination?.lat;
+  const lng = destination?.lng;
+  const mapUrl = destination
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.02},${lat - 0.02},${lng + 0.02},${lat + 0.02}&layer=mapnik&marker=${lat},${lng}`
+    : "";
+  const mapsUrl =
+    route?.google_maps_url ||
+    (destination ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` : "");
 
   return (
     <AppLayout>
@@ -38,7 +83,7 @@ export default function RoutePage() {
             {route?.hospital_name || route?.hospital?.name}
           </h2>
           <p className="mt-2 text-slate-600">
-            {route?.hospital_address || route?.hospital?.address}
+            {route?.hospital_address || hospitalLocation.address}
           </p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <div className="rounded-[20px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-4">
@@ -54,20 +99,36 @@ export default function RoutePage() {
               </p>
             </div>
           </div>
-          <a
-            href={route?.google_maps_url}
-            target="_blank"
-            rel="noreferrer"
-            className="cc-btn-primary mt-8 inline-flex"
-          >
-            Open in Google Maps
-          </a>
+          {mapsUrl ? (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="cc-btn-primary mt-8 inline-flex"
+            >
+              Open in Google Maps
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="mt-8 inline-flex cursor-not-allowed rounded-full bg-slate-300 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Coordinates unavailable
+            </button>
+          )}
         </div>
-        <iframe
-          title="map"
-          src={mapUrl}
-          className="min-h-[420px] w-full rounded-[24px] border border-[rgba(0,184,169,0.15)] bg-white shadow-[0_4px_24px_rgba(0,184,169,0.08)]"
-        />
+        {mapUrl ? (
+          <iframe
+            title="map"
+            src={mapUrl}
+            className="min-h-[420px] w-full rounded-[24px] border border-[rgba(0,184,169,0.15)] bg-white shadow-[0_4px_24px_rgba(0,184,169,0.08)]"
+          />
+        ) : (
+          <div className="flex min-h-[420px] items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-white text-slate-500">
+            Live map unavailable for this hospital
+          </div>
+        )}
       </div>
     </AppLayout>
   );
