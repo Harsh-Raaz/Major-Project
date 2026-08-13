@@ -24,7 +24,11 @@ const attachToken = (client) => {
   client.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (error.response?.status === 401) {
+      const requestUrl = String(error.config?.url || '');
+      const isAuthRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+      const hadToken = Boolean(getToken());
+
+      if (error.response?.status === 401 && hadToken && !isAuthRequest) {
         clearAllAuthData();
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';

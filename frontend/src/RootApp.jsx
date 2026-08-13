@@ -33,22 +33,8 @@ export default function RootApp() {
         <Route path="/route/:id" element={<RoutePage />} />
 
         {/* Protected Routes */}
-        <Route
-          path="/booking"
-          element={
-            <ProtectedRoute>
-              <Booking />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/confirm"
-          element={
-            <ProtectedRoute>
-              <Confirmation />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/booking" element={<Booking />} />
+        <Route path="/confirm" element={<Confirmation />} />
         <Route
           path="/dashboard"
           element={

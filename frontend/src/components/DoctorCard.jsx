@@ -3,8 +3,16 @@ import { scoreClass, starText } from "../utils/helpers";
 
 export default function DoctorCard({ doctor, bestMatch, onBook }) {
   const load = Number(doctor.load_index ?? doctor.loadIndex ?? 0);
-  const max = Number(doctor.max_patients ?? doctor.maxPatients ?? 0);
-  const current = Number(doctor.current_patients ?? doctor.currentPatients ?? 0);
+  const max = Number(
+    doctor.max_patients_per_day ??
+    doctor.max_patients ??
+    doctor.maxPatients ?? 0
+  );
+  const current = Number(
+    doctor.current_patients_today ??
+    doctor.current_patients ??
+    doctor.currentPatients ?? 0
+  );
   const available = Math.max(max - current, 0);
 
   return (

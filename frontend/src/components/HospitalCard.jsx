@@ -59,7 +59,7 @@ export default function HospitalCard({
         <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
           <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Slots today</p>
           <p className="mt-2 font-semibold text-[#0A1628]">
-            {hospital.available_slots_today ?? 0}
+            {hospital.available_slots_today ?? hospital.available_slots ?? 0}
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2 rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">

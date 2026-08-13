@@ -34,7 +34,12 @@ export default function CompareModal({ data, onClose }) {
               </p>
               <div className="mt-4 grid gap-2 text-sm text-slate-700">
                 <p>Rating: {hospital.rating?.overall ?? hospital.rating ?? "-"}</p>
-                <p>Distance: {hospital.distance_km ?? hospital.distance ?? "-"} km</p>
+                <p>Distance: {
+                  hospital.distance_km ??
+                  hospital.distance ??
+                  hospital.distanceKm ??
+                  "Not calculated in comparison view"
+                } {(hospital.distance_km ?? hospital.distance) ? "km" : ""}</p>
                 <p>Departments: {(hospital.departments || []).join(", ") || "-"}</p>
                 <p>Available Doctors: {hospital.available_doctors_count ?? "-"}</p>
                 <p>Slots Today: {hospital.available_slots_today ?? "-"}</p>
@@ -45,7 +50,7 @@ export default function CompareModal({ data, onClose }) {
                     "-"}
                 </p>
                 <p>Contact: {hospital.contact || "-"}</p>
-                <p>Score: {hospital.score ?? "-"}</p>
+                <p>Score: {hospital.score ? `${Math.round(hospital.score * 100)}%` : "See hospital list for score"}</p>
               </div>
             </div>
           ))}
