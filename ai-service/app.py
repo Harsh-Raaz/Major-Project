@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from ml.predict import predict_noshow
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -156,6 +156,16 @@ def busy_hours_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/predict-noshow", methods=["POST"])
+def noshow_prediction():
+    try:
+        data = request.get_json(silent=True) or {}
 
+        result = predict_noshow(data)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     app.run(port=5001, debug=True)
