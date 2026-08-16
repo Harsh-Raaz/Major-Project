@@ -36,14 +36,21 @@ router.post('/recommend-hospitals', async (req, res) => {
     }
     const hospitals = await Hospital.find(query);
     const today = new Date().toISOString().split('T')[0];
+    const Appointment = require('../models/Appointment');
 
     const hospitalData = await Promise.all(
       hospitals.map(async (h) => {
         const slots = await Slot.find({
           hospital_id: h._id,
-          date: today,
-          status: { $ne: 'full' }
+          date: today
         });
+        const hospitalAppointments = await Appointment.find({
+          hospital_id: h._id,
+          status: { $in: ['confirmed', 'rescheduled'] }
+        }).select('estimated_wait_mins');
+        const avgWait = hospitalAppointments.length
+          ? hospitalAppointments.reduce((sum, a) => sum + (a.estimated_wait_mins || 0), 0) / hospitalAppointments.length
+          : 20;
         return {
           _id: h._id,
           name: h.name,
@@ -51,8 +58,8 @@ router.post('/recommend-hospitals', async (req, res) => {
           lng: h.location?.lng,
           address: h.location?.address,
           rating: h.rating.overall,
-          available_slots: slots.length,
-          avg_wait_time: 25,
+          available_slots: slots.filter((s) => s.status !== 'full').length,
+          avg_wait_time: Math.round(avgWait),
           departments: h.departments,
           facilities: h.facilities
         };
@@ -128,6 +135,14 @@ router.post('/seasonal-alert', async (req, res) => {
     const month = new Date().getMonth() + 1;
     const result = await getSeasonalAlert(month, symptoms);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+router.get('/seasonal-calendar', async (req, res) => {
+  try {
+    const response = await axios.get(`${AI_SERVICE_URL}/seasonal-calendar`);
+    res.json(response.data);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import ProgressBar from "./ProgressBar";
 import { scoreClass, starText } from "../utils/helpers";
 
 export default function DoctorCard({ doctor, bestMatch, onBook }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const load = Number(doctor.load_index ?? doctor.loadIndex ?? 0);
   const max = Number(
     doctor.max_patients_per_day ??
@@ -66,6 +68,32 @@ export default function DoctorCard({ doctor, bestMatch, onBook }) {
         <div className="mt-4">
           <ProgressBar value={load} />
         </div>
+        {doctor.score_breakdown && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowBreakdown((v) => !v)}
+              className="text-xs font-medium text-[#00B8A9] underline"
+            >
+              {showBreakdown ? "Hide" : "Why this score?"}
+            </button>
+            {showBreakdown && (
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                {Object.entries(doctor.score_breakdown).map(([label, value]) => (
+                  <div key={label} className="rounded-[14px] border border-[rgba(0,184,169,0.15)] bg-white p-2">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500">{label.replace("_", " ")}</p>
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+                      <div
+                        className="h-1.5 rounded-full bg-[#00B8A9]"
+                        style={{ width: `${value}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-[#0A1628]">{value}%</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <p className="mt-4 text-sm leading-6 text-slate-600">{doctor.bio}</p>
         {load > 75 && (
           <p className="mt-3 rounded-full bg-[#fff7e6] px-3 py-1 text-sm font-semibold text-[#b86a00] inline-flex">

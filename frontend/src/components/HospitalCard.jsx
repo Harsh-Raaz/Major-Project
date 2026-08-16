@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MapPin, ArrowRightLeft, Route } from "lucide-react";
 import { scoreClass, starText } from "../utils/helpers";
 
@@ -9,6 +10,7 @@ export default function HospitalCard({
   onViewDoctors,
   onRoute,
 }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const id = hospital.id || hospital._id;
   const address =
     hospital.address ||
@@ -73,6 +75,33 @@ export default function HospitalCard({
           ))}
         </div>
       </div>
+
+      {hospital.score_breakdown && (
+        <div className="mt-4 pl-3">
+          <button
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="text-xs font-medium text-[#00B8A9] underline"
+          >
+            {showBreakdown ? "Hide" : "Why this score?"}
+          </button>
+          {showBreakdown && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              {Object.entries(hospital.score_breakdown).map(([label, value]) => (
+                <div key={label} className="rounded-[14px] border border-[rgba(0,184,169,0.15)] bg-white p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">{label.replace("_", " ")}</p>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+                    <div
+                      className="h-1.5 rounded-full bg-[#00B8A9]"
+                      style={{ width: `${value}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs font-semibold text-[#0A1628]">{value}%</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 flex flex-wrap items-center gap-3 pl-3">
         <label className="inline-flex items-center gap-2 rounded-full border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] px-4 py-2 text-sm text-slate-700">

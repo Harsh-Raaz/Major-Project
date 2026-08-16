@@ -76,17 +76,26 @@ router.post('/', async (req, res) => {
       priority
     } = req.body;
 
-    const slot = await Slot.findById(slot_id);
-    if (!slot) {
+    const slotCheck = await Slot.findById(slot_id);
+    if (!slotCheck) {
       return res.status(404).json({ message: 'Slot not found' });
     }
-    if (String(slot.doctor_id) !== String(doctor_id)) {
+    if (String(slotCheck.doctor_id) !== String(doctor_id)) {
       return res.status(400).json({ message: 'Selected slot does not belong to this doctor' });
     }
-    if (String(slot.hospital_id) !== String(hospital_id)) {
+    if (String(slotCheck.hospital_id) !== String(hospital_id)) {
       return res.status(400).json({ message: 'Selected slot does not belong to this hospital' });
     }
-    if (slot.status === 'full') {
+
+    const patientsAhead = slotCheck.current_bookings;
+
+    const slot = await Slot.findOneAndUpdate(
+      { _id: slot_id, $expr: { $lt: ['$current_bookings', '$capacity'] } },
+      { $inc: { current_bookings: 1 } },
+      { new: true }
+    );
+
+    if (!slot) {
       return res.status(400).json({
         message: 'Slot is full',
         suggestion: 'Please join waitlist or choose another slot'
@@ -98,13 +107,11 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ message: 'Doctor not found' });
     }
 
-    const patientsAhead = slot.current_bookings;
     const estimatedWait = calculateWaitTime(
       patientsAhead,
       doctor.avg_consultation_mins
     );
 
-    slot.current_bookings += 1;
     updateSlotStatus(slot);
     await slot.save();
 

@@ -8,7 +8,7 @@ from busy_hours import analyze_busy_hours
 from emergency_priority import classify_priority, prioritize_queue
 from load_balancer import balance_slots, check_doctor_load
 from recommender import recommend_doctors, recommend_hospitals
-from seasonal import get_seasonal_alert
+from seasonal import get_seasonal_alert, get_full_seasonal_calendar
 from symptom_classifier import suggest_department
 from wait_time import estimate_wait
 
@@ -75,6 +75,14 @@ def seasonal_alert():
 
         result = get_seasonal_alert(month, symptoms)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/seasonal-calendar", methods=["GET"])
+def seasonal_calendar():
+    try:
+        return jsonify(get_full_seasonal_calendar())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

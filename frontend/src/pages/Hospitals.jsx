@@ -57,7 +57,7 @@ export default function Hospitals() {
     if (selected.length !== 2) return toast.error("Select exactly two hospitals");
     setComparing(true);
     try {
-      const res = await compareHospitals(selected);
+      const res = await compareHospitals(selected, fixedPatient.lat, fixedPatient.lng);
       setCompareData(res.data);
     } catch {
       toast.error("Comparison failed");

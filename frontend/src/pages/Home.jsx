@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import AppLayout from "../layouts/AppLayout";
 import AlertBox from "../components/AlertBox";
 import Loader from "../components/Loader";
-import { seasonalAlert, suggestDepartment } from "../api/ai";
+import { suggestDepartment, classifyPriority } from "../api/ai";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -13,28 +13,24 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const getSeasonalAlert = (departmentData, alertData) =>
-    departmentData?.seasonal_alert ?? alertData?.seasonal_alert ?? alertData ?? null;
-
   const onSearch = async () => {
     if (!symptoms.trim()) return toast.error("Please enter symptoms");
     setLoading(true);
     setResult(null);
     try {
-      const [deptRes, alertRes] = await Promise.all([
+      const [deptRes, priorityRes] = await Promise.all([
         suggestDepartment(symptoms),
-        seasonalAlert(symptoms),
+        classifyPriority(symptoms),
       ]);
       const departmentData = deptRes.data || {};
-      const alertData = alertRes.data || null;
-      const seasonalAlertResult = getSeasonalAlert(departmentData, alertData);
+      const priorityData = priorityRes.data || null;
       const possibleMatches = Array.isArray(departmentData.all_matches)
         ? departmentData.all_matches
         : departmentData.department
           ? [departmentData.department]
           : [];
-      const riskDiseases = Array.isArray(seasonalAlertResult?.risk_diseases)
-        ? seasonalAlertResult.risk_diseases
+      const riskDiseases = Array.isArray(departmentData.seasonal_alert?.risk_diseases)
+        ? departmentData.seasonal_alert.risk_diseases
         : [];
 
       setResult({
@@ -42,7 +38,8 @@ export default function Home() {
         confidence: departmentData.confidence,
         possible_matches: possibleMatches,
         risk_diseases: riskDiseases,
-        seasonal_alert: seasonalAlertResult,
+        seasonal_alert: departmentData.seasonal_alert || null,
+        priority: priorityData,
       });
     } catch {
       toast.error("Failed to process symptoms");
@@ -125,15 +122,38 @@ export default function Home() {
             }`}
           />
         )}
+        {result?.priority && result.priority.priority !== "normal" && (
+          <div
+            className={`rounded-[20px] border p-4 ${
+              result.priority.priority === "emergency"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-amber-200 bg-amber-50 text-amber-800"
+            }`}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide">
+              {result.priority.priority} priority
+            </p>
+            <p className="mt-1 text-sm font-medium">{result.priority.action}</p>
+          </div>
+        )}
         {result?.seasonal_alert && (
-          <AlertBox
-            type="error"
-            text={
-              result.seasonal_alert?.message ||
-              result.seasonal_alert?.warning ||
-              result.seasonal_alert
-            }
-          />
+          <>
+            <AlertBox
+              type={
+                result.seasonal_alert.tier === "high"
+                  ? "error"
+                  : result.seasonal_alert.tier === "elevated"
+                    ? "warning"
+                    : "info"
+              }
+              text={result.seasonal_alert.warning}
+            />
+            {result.seasonal_alert.matched_keywords?.length > 0 && (
+              <p className="text-xs text-slate-500 -mt-2">
+                Matched: {result.seasonal_alert.matched_keywords.join(", ")}
+              </p>
+            )}
+          </>
         )}
         {(result?.possible_matches?.length > 0 || result?.risk_diseases?.length > 0) && (
           <div className="cc-surface p-6">

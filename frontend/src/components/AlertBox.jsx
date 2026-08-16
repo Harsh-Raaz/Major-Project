@@ -4,9 +4,11 @@ export default function AlertBox({ type = "info", text }) {
   const classes =
     type === "error"
       ? "border-red-200 bg-red-50 text-red-700"
-      : type === "success"
-        ? "border-[rgba(0,184,169,0.18)] bg-[#F0FDF9] text-[#0A1628]"
-        : "border-slate-200 bg-slate-50 text-slate-700";
+      : type === "warning"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : type === "success"
+          ? "border-[rgba(0,184,169,0.18)] bg-[#F0FDF9] text-[#0A1628]"
+          : "border-slate-200 bg-slate-50 text-slate-700";
 
   return (
     <div className={`rounded-[20px] border p-4 shadow-[0_4px_24px_rgba(0,184,169,0.08)] ${classes}`}>

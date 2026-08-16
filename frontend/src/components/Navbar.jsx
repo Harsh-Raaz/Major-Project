@@ -26,7 +26,7 @@ export default function Navbar() {
 
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex flex-wrap items-center gap-5">
-            <NavLink to="/" className={navLinkClass}>
+            <NavLink to="/" end className={navLinkClass}>
               {({ isActive }) => (
                 <span className="relative">
                   Home

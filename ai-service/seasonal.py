@@ -151,3 +151,24 @@ def get_seasonal_alert(month, symptoms=""):
         "message": message,
         "month": month,
     }
+
+
+def get_alert_tier(month, dengue_match_count, alert_data):
+    if dengue_match_count >= 2 and month in [6, 7, 8, 9]:
+        return "high"
+    if dengue_match_count >= 1 or alert_data.get("severity") in ("critical", "high"):
+        return "elevated"
+    return "watch"
+
+
+def get_full_seasonal_calendar():
+    calendar = []
+    for month in range(1, 13):
+        data = get_seasonal_alert(month)
+        calendar.append({
+            "month": month,
+            "season": data.get("season"),
+            "severity": data.get("severity"),
+            "risk_diseases": data.get("risk_diseases", []),
+        })
+    return calendar

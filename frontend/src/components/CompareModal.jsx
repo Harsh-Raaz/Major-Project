@@ -50,7 +50,6 @@ export default function CompareModal({ data, onClose }) {
                     "-"}
                 </p>
                 <p>Contact: {hospital.contact || "-"}</p>
-                <p>Score: {hospital.score ? `${Math.round(hospital.score * 100)}%` : "See hospital list for score"}</p>
               </div>
             </div>
           ))}

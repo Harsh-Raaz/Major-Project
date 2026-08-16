@@ -16,6 +16,7 @@ import {
   getAdminDashboard,
   getAdminTrends,
   getBusyHours,
+  getSeasonalCalendar,
 } from '../api/admin';
 
 export default function Admin() {
@@ -24,21 +25,24 @@ export default function Admin() {
   const [trends, setTrends] = useState({});
   const [busy, setBusy] = useState({});
   const [alerts, setAlerts] = useState([]);
+  const [seasonalCalendar, setSeasonalCalendar] = useState([]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [dashboardRes, trendsRes, busyRes, alertsRes] = await Promise.all([
+        const [dashboardRes, trendsRes, busyRes, alertsRes, calendarRes] = await Promise.all([
           getAdminDashboard(),
           getAdminTrends(),
           getBusyHours(),
           getAdminAlerts(),
+          getSeasonalCalendar(),
         ]);
         setDashboard(dashboardRes.data || {});
         setTrends(trendsRes.data || {});
         setBusy(busyRes.data || {});
         setAlerts(alertsRes.data?.alerts || alertsRes.data || []);
+        setSeasonalCalendar(calendarRes.data || []);
       } finally {
         setLoading(false);
       }
@@ -193,6 +197,30 @@ export default function Admin() {
           </div>
         ))}
       </section>
+
+      <div className="cc-surface p-6 mt-6">
+        <p className="cc-eyebrow">Seasonal Disease Calendar</p>
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
+          {seasonalCalendar.map((m) => {
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const isCurrent = m.month === new Date().getMonth() + 1;
+            const severityColor =
+              m.severity === 'critical' ? 'bg-red-100 text-red-700 border-red-200' :
+              m.severity === 'high' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+              'bg-slate-100 text-slate-600 border-slate-200';
+            return (
+              <div
+                key={m.month}
+                className={`rounded-[14px] border p-2 text-center ${severityColor} ${isCurrent ? 'ring-2 ring-[#00B8A9]' : ''}`}
+                title={m.risk_diseases.join(', ')}
+              >
+                <p className="text-xs font-semibold">{monthNames[m.month - 1]}</p>
+                <p className="mt-1 text-[10px]">{m.risk_diseases[0] || '-'}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <section className="cc-surface p-5 md:p-6">
         {busy.current_hour_warning && (

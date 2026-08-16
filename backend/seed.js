@@ -22,7 +22,9 @@ async function seed() {
       'Dermatology',
       'Pediatrics',
       'Gynecology',
-      'Emergency'
+      'Emergency',
+      'Gastroenterology',
+      'Ophthalmology'
     ];
 
     // ---------------- HOSPITALS ----------------
@@ -62,30 +64,51 @@ async function seed() {
         facilities: ['ICU', 'Blood Bank'],
         contact: '080-44444444',
         total_doctors: 95
+      },
+      {
+        name: 'Narayana Health City',
+        location: { address: 'Bommasandra', city: 'Bengaluru', lat: 12.8166, lng: 77.6928 },
+        departments: commonDepartments,
+        rating: { overall: 4.5, patient_experience: 4.4, safety: 4.6 },
+        facilities: ['ICU', 'Cardiac Care', 'Blood Bank'],
+        contact: '080-55555555',
+        total_doctors: 110
+      },
+      {
+        name: 'Columbia Asia Hospital',
+        location: { address: 'Hebbal', city: 'Bengaluru', lat: 13.0358, lng: 77.5970 },
+        departments: commonDepartments,
+        rating: { overall: 4.4, patient_experience: 4.3, safety: 4.5 },
+        facilities: ['ICU', 'MRI', 'Pharmacy'],
+        contact: '080-66666666',
+        total_doctors: 85
+      },
+      {
+        name: 'Sagar Hospitals',
+        location: { address: 'Jayanagar', city: 'Bengaluru', lat: 12.9259, lng: 77.5832 },
+        departments: commonDepartments,
+        rating: { overall: 4.3, patient_experience: 4.2, safety: 4.4 },
+        facilities: ['ICU', 'Blood Bank', 'Pharmacy'],
+        contact: '080-77777777',
+        total_doctors: 90
       }
     ]);
 
     // ---------------- DOCTORS ----------------
-    const doctorTemplates = [
-      { dept: 'General Medicine', names: ['Dr. Priya Sharma', 'Dr. Ramesh Rao'] },
-      { dept: 'Cardiology', names: ['Dr. Meena Iyer', 'Dr. Arjun Reddy'] },
-      { dept: 'Orthopedics', names: ['Dr. Vikram Singh', 'Dr. Kiran Patel'] },
-      { dept: 'Neurology', names: ['Dr. Neha Kapoor', 'Dr. Rahul Das'] },
-      { dept: 'Dermatology', names: ['Dr. Kavya Nair', 'Dr. Sneha Menon'] },
-      { dept: 'Pediatrics', names: ['Dr. Suresh Kumar', 'Dr. Anita Joseph'] },
-      { dept: 'Gynecology', names: ['Dr. Shalini Gupta', 'Dr. Pooja Mehta'] },
-      { dept: 'Emergency', names: ['Dr. Rajiv Nair', 'Dr. Imran Khan'] }
-    ];
-
+    const firstNames = ['Priya','Ramesh','Meena','Arjun','Vikram','Kiran','Neha','Rahul','Kavya','Sneha','Suresh','Anita','Shalini','Pooja','Rajiv','Imran','Divya','Karthik','Lakshmi','Farhan'];
+    const lastNames = ['Sharma','Rao','Iyer','Reddy','Singh','Patel','Kapoor','Das','Nair','Menon','Kumar','Joseph','Gupta','Mehta','Khan','Bhat'];
+    const departmentList = ['General Medicine','Cardiology','Orthopedics','Neurology','Dermatology','Pediatrics','Gynecology','Emergency','Gastroenterology','Ophthalmology'];
     const doctorsData = [];
 
     hospitals.forEach((hospital) => {
-      doctorTemplates.forEach((template) => {
-        template.names.forEach((name) => {
+      departmentList.forEach((dept) => {
+        const count = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < count; i++) {
+          const name = `Dr. ${firstNames[Math.floor(Math.random()*firstNames.length)]} ${lastNames[Math.floor(Math.random()*lastNames.length)]}`;
           doctorsData.push({
             name,
             hospital_id: hospital._id,
-            department: template.dept,
+            department: dept,
             available: true,
             experience_years: Math.floor(Math.random() * 15) + 5,
             rating: (Math.random() * 1 + 4).toFixed(1),
@@ -93,9 +116,9 @@ async function seed() {
             max_patients_per_day: 30 + Math.floor(Math.random() * 20),
             current_patients_today: Math.floor(Math.random() * 10),
             qualification: 'MBBS, MD',
-            bio: `${template.dept} specialist`
+            bio: `${dept} specialist`
           });
-        });
+        }
       });
     });
 
@@ -116,6 +139,10 @@ async function seed() {
 
       doctors.forEach((doc) => {
         timeSlots.forEach((t, i) => {
+          const bookings = Math.floor(Math.random() * 6);
+          const capped = Math.min(bookings, 5);
+          const load = capped / 5;
+          const status = load >= 1 ? 'full' : load >= 0.8 ? 'almost_full' : 'available';
           slotDocs.push({
             doctor_id: doc._id,
             hospital_id: doc.hospital_id,
@@ -123,8 +150,8 @@ async function seed() {
             start_time: t,
             end_time: timeSlots[i + 1] || '17:00',
             capacity: 5,
-            current_bookings: Math.floor(Math.random() * 5),
-            status: 'available',
+            current_bookings: capped,
+            status,
             duration_mins: 60
           });
         });

@@ -15,13 +15,24 @@ router.post('/compare', async (req, res) => {
   try {
     const Slot = require('../models/Slot');
     const Doctor = require('../models/Doctor');
-    const { hospital_ids: hospitalIds } = req.body;
+    const { hospital_ids: hospitalIds, patient_lat, patient_lng } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     const results = await Promise.all(
       (hospitalIds || []).map(async (hospitalId) => {
         const hospital = await Hospital.findById(hospitalId);
         if (!hospital) return null;
+
+        let distance_km = null;
+        if (patient_lat != null && patient_lng != null && hospital.location) {
+          const R = 6371, PI = Math.PI;
+          const dLat = ((hospital.location.lat - patient_lat) * PI) / 180;
+          const dLng = ((hospital.location.lng - patient_lng) * PI) / 180;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos((patient_lat * PI) / 180) *
+                    Math.cos((hospital.location.lat * PI) / 180) * Math.sin(dLng / 2) ** 2;
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          distance_km = Math.round(R * c * 100) / 100;
+        }
 
         const totalSlotsToday = await Slot.countDocuments({
           hospital_id: hospitalId,
@@ -42,6 +53,7 @@ router.post('/compare', async (req, res) => {
         const hospitalObj = hospital.toObject();
         return {
           ...hospitalObj,
+          distance_km,
           total_slots_today: totalSlotsToday,
           available_slots_today: availableSlotsToday,
           available_doctors_count: availableDoctors.length,
