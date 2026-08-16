@@ -155,6 +155,71 @@ router.get('/patient/:patient_id', async (req, res) => {
   }
 });
 
+const binaryFeature = (value) => (Number(value) === 1 ? 1 : 0);
+const historyIncludes = (history, term) =>
+  (history || []).some((item) => String(item).toLowerCase().includes(term));
+
+const buildNoShowFeatures = (appointment) => {
+  const patient = appointment.patient_id || {};
+  const slot = appointment.slot_id || {};
+  const history = patient.medical_history || [];
+  const slotDate = slot.date ? new Date(`${slot.date}T00:00:00`) : null;
+  const bookedAt = appointment.booking_time || appointment.createdAt;
+  const leadTime = slotDate && bookedAt
+    ? Math.max(0, Math.ceil((slotDate - new Date(bookedAt)) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  return {
+    // Age 30 and lead time 1 match the AI service's documented fallback values.
+    age: Number.isFinite(Number(patient.age)) ? Number(patient.age) : 30,
+    scholarship: binaryFeature(patient.scholarship),
+    hypertension: binaryFeature(patient.hypertension) || Number(historyIncludes(history, 'hypertension')),
+    diabetes: binaryFeature(patient.diabetes) || Number(historyIncludes(history, 'diabetes')),
+    alcoholism: binaryFeature(patient.alcoholism) || Number(historyIncludes(history, 'alcohol')),
+    handicap: Number.isFinite(Number(patient.handicap)) ? Number(patient.handicap) : 0,
+    sms_received: binaryFeature(patient.sms_received),
+    lead_time_days: leadTime,
+    appointment_dow: slotDate ? slotDate.getDay() : 1,
+    patient_appt_count: appointment.patient_appt_count || 1,
+    gender_female: String(patient.gender || '').toLowerCase() === 'female' ? 1 : 0
+  };
+};
+
+router.get('/doctor/:doctor_id', async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ doctor_id: req.params.doctor_id })
+      .populate(
+        'patient_id',
+        'name age gender phone email medical_history scholarship hypertension diabetes alcoholism handicap sms_received'
+      )
+      .populate('slot_id', 'date start_time end_time')
+      .populate('hospital_id', 'name location')
+      .sort({ createdAt: -1 });
+
+    const patientIds = [...new Set(
+      appointments.map((appointment) => String(appointment.patient_id?._id || appointment.patient_id))
+    )];
+    const patientCounts = await Promise.all(
+      patientIds.map(async (patientId) => [
+        patientId,
+        await Appointment.countDocuments({ patient_id: patientId })
+      ])
+    );
+    const countsByPatientId = new Map(patientCounts);
+
+    const data = appointments.map((appointment) => {
+      const serialized = appointment.toObject();
+      serialized.patient_appt_count = countsByPatientId.get(String(serialized.patient_id?._id)) || 1;
+      serialized.no_show_features = buildNoShowFeatures(serialized);
+      return serialized;
+    });
+
+    res.json({ appointments: data });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.put('/:id/cancel', async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);

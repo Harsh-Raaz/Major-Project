@@ -16,6 +16,7 @@ import Waitlist from "./pages/Waitlist";
 import SearchHistory from "./pages/SearchHistory";
 import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
+import Chatbot from "./pages/Chatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function RootApp() {
@@ -28,6 +29,7 @@ export default function RootApp() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/hospitals" element={<Hospitals />} />
+        <Route path="/chatbot" element={<Chatbot />} />
         <Route path="/doctors/:id" element={<Doctors />} />
         <Route path="/slots/:id" element={<Slots />} />
         <Route path="/route/:id" element={<RoutePage />} />

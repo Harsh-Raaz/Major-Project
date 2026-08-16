@@ -22,4 +22,5 @@ export const recommendDoctors = (hospitalId, department) =>
   api.post("/ai/recommend-doctors", { hospital_id: hospitalId, department });
 export const classifyPriority = (symptoms) => api.post("/ai/classify-priority", { symptoms });
 export const loadBalanceSlot = (slots) => api.post("/ai/load-balance-slot", { slots });
+export const predictNoShow = (features) => api.post("/ai/predict-noshow", features);
 

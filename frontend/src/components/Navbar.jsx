@@ -46,6 +46,16 @@ export default function Navbar() {
                 </span>
               )}
             </NavLink>
+            <NavLink to="/chatbot" className={navLinkClass}>
+              {({ isActive }) => (
+                <span className="relative">
+                  Care Assistant
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-[#00B8A9]" />
+                  )}
+                </span>
+              )}
+            </NavLink>
             {isAuthenticated && (
               <NavLink to="/dashboard" className={navLinkClass}>
                 {({ isActive }) => (

@@ -37,6 +37,7 @@ router.get('/dashboard', async (req, res) => {
       const max = doc.max_patients_per_day || 1;
       const current = doc.current_patients_today || 0;
       return {
+        id: doc._id,
         name: doc.name,
         department: doc.department,
         load_index: Math.round((current / max) * 100),

@@ -5,4 +5,6 @@ export const getAdminTrends = () => api.get("/admin/trends");
 export const getBusyHours = () => api.get("/admin/busy-hours");
 export const getAdminAlerts = () => api.get("/notifications/admin/alerts");
 export const getSeasonalCalendar = () => api.get('/ai/seasonal-calendar');
+export const getDoctorAppointments = (doctorId) =>
+  api.get(`/appointments/doctor/${doctorId}`);
 
