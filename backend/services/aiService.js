@@ -72,6 +72,15 @@ async function getBusyHours(bookings) {
     return null;
   }
 }
+async function predictNoShow(data) {
+  try {
+    const res = await axios.post(`${AI_SERVICE_URL}/predict-noshow`, data);
+    return res.data;
+  } catch (err) {
+    console.error('No-show prediction failed:', err.message);
+    return null;
+  }
+}
 
 module.exports = {
   suggestDepartment,
@@ -79,5 +88,6 @@ module.exports = {
   recommendDoctors,
   estimateWait,
   getSeasonalAlert,
-  getBusyHours
+  getBusyHours,
+  predictNoShow
 };

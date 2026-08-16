@@ -8,7 +8,8 @@ const {
   suggestDepartment,
   recommendHospitals,
   recommendDoctors,
-  getSeasonalAlert
+  getSeasonalAlert,
+  predictNoShow
 } = require('../services/aiService');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 
@@ -131,5 +132,21 @@ router.post('/seasonal-alert', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.post('/predict-noshow', async (req, res) => {
+  try {
+    const result = await predictNoShow(req.body);
 
+    if (!result) {
+      return res.status(500).json({
+        message: 'AI service unavailable'
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
 module.exports = router;
