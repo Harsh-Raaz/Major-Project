@@ -17,7 +17,9 @@ export default function ChatMessage({ message }) {
         className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
           isUser
             ? "rounded-tr-sm bg-[#00B8A9] text-white"
-            : "rounded-tl-sm border border-[rgba(0,184,169,0.14)] bg-white text-slate-700"
+            : message.emergency
+              ? "rounded-tl-sm border-2 border-red-300 bg-red-50 font-semibold text-red-800"
+              : "rounded-tl-sm border border-[rgba(0,184,169,0.14)] bg-white text-slate-700"
         }`}
       >
         {message.content}

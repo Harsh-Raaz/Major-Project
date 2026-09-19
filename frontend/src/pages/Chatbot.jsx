@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, MapPinned, RotateCcw, Send } from "lucide-react";
+import { AlertCircle, MapPinned, RotateCcw, Send, Siren } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import ChatMessage from "../components/ChatMessage";
 import ChatTypingIndicator from "../components/ChatTypingIndicator";
-import { sendMockChatbotMessage } from "../api/chatbot";
+import { resetChatbotSession, sendChatbotMessage } from "../api/chatbot";
 
 const SESSION_KEY = "crowdcare_chatbot_session_id";
 const welcomeMessage = {
@@ -49,12 +49,17 @@ export default function Chatbot() {
     setIsSending(true);
 
     try {
-      const response = await sendMockChatbotMessage({ message, session_id: sessionId });
+      const { data: response } = await sendChatbotMessage({ message, session_id: sessionId });
       setSessionId(response.session_id);
       window.sessionStorage.setItem(SESSION_KEY, response.session_id);
       setMessages((current) => [
         ...current,
-        { id: `${Date.now()}-assistant`, role: "assistant", content: response.reply },
+        {
+          id: `${Date.now()}-assistant`,
+          role: "assistant",
+          content: response.reply,
+          emergency: response.urgency === "emergency",
+        },
       ]);
       if (response.is_complete) setRecommendation(response);
     } catch (requestError) {
@@ -64,7 +69,13 @@ export default function Chatbot() {
     }
   };
 
-  const startOver = () => {
+  const startOver = async () => {
+    setError("");
+    try {
+      await resetChatbotSession(sessionId);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Could not reset the previous chat.");
+    }
     const newSessionId = createSessionId();
     window.sessionStorage.setItem(SESSION_KEY, newSessionId);
     setSessionId(newSessionId);
@@ -109,10 +120,34 @@ export default function Chatbot() {
                 </div>
               )}
               {recommendation && (
-                <div className="rounded-2xl border border-[#9be7dd] bg-[#F0FDF9] p-4">
-                  <p className="text-sm font-semibold text-[#0A1628]">Recommended department: {recommendation.department}</p>
-                  {recommendation.urgency && recommendation.urgency !== "normal" && (
-                    <p className="mt-1 text-sm text-amber-800">Priority: {recommendation.urgency}</p>
+                <div
+                  className={`rounded-2xl border p-4 ${
+                    recommendation.urgency === "emergency"
+                      ? "border-red-300 bg-red-50"
+                      : "border-[#9be7dd] bg-[#F0FDF9]"
+                  }`}
+                >
+                  {recommendation.urgency === "emergency" && (
+                    <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-300 bg-red-100 p-3 text-sm font-bold text-red-800">
+                      <Siren size={19} className="mt-0.5 shrink-0" />
+                      Emergency: seek immediate medical help or go to the nearest Emergency department.
+                    </div>
+                  )}
+                  <p className="text-sm font-semibold text-[#0A1628]">
+                    Recommended department: {recommendation.department}
+                  </p>
+                  {recommendation.urgency && (
+                    <p className={`mt-1 text-sm ${recommendation.urgency === "emergency" ? "font-bold text-red-700" : "text-amber-800"}`}>
+                      Priority: {recommendation.urgency}
+                    </p>
+                  )}
+                  {recommendation.summary && (
+                    <p className="mt-2 text-sm text-slate-600">Summary: {recommendation.summary}</p>
+                  )}
+                  {recommendation.seasonal_alert && (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      {recommendation.seasonal_alert.warning || recommendation.seasonal_alert.message || recommendation.seasonal_alert}
+                    </div>
                   )}
                   <button type="button" onClick={findHospitals} className="cc-btn-primary mt-4 w-full justify-center sm:w-auto">
                     <MapPinned size={18} /> Find Hospitals for {recommendation.department}

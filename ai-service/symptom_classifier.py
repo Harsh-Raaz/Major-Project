@@ -77,7 +77,7 @@ SYMPTOM_MAP = {
         "hair loss", "dandruff", "skin discoloration", "itchy skin",
     ],
     "Ophthalmology": [
-        "eye pain", "blurred vision", "redness in eye", "eye discharge",
+        "eye pain", "painful eye", "blurred vision", "redness in eye", "red eye", "eye is red", "eye discharge",
         "vision loss", "watery eyes", "eye infection", "cataract",
         "eye irritation", "spectacles", "glasses", "eye strain",
         "double vision", "eye swelling", "itchy eyes", "dry eyes",

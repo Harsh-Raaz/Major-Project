@@ -180,20 +180,6 @@ def handle_chat_message(session_id, message):
     if urgency == "urgent":
         closing_reply += " Given your symptoms, please try to be seen soon rather than waiting."
 
-    try:
-        instruction = {
-            "role": "system",
-            "content": (
-                f"You now have enough information. Tell the patient in one short "
-                f"sentence that {department} is the right department for them, "
-                f"without naming any disease."
-            ),
-        }
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + session["history"] + [instruction]
-        closing_reply = _sanitize_reply(_call_ollama(messages))
-    except Exception as error:
-        print(f"[chatbot] Ollama unavailable for closing reply, using template: {error}")
-
     session["history"].append({"role": "assistant", "content": closing_reply})
 
     return {
