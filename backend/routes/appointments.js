@@ -64,76 +64,80 @@ router.get('/autocomplete', async (req, res) => {
   }
 });
 
+async function createAppointment({ patient_id, doctor_id, slot_id, hospital_id, department, symptoms, priority }) {
+  const slotCheck = await Slot.findById(slot_id);
+  if (!slotCheck) {
+    return { error: 'not_found', message: 'Slot not found' };
+  }
+  if (String(slotCheck.doctor_id) !== String(doctor_id)) {
+    return { error: 'mismatch', message: 'Selected slot does not belong to this doctor' };
+  }
+  if (String(slotCheck.hospital_id) !== String(hospital_id)) {
+    return { error: 'mismatch', message: 'Selected slot does not belong to this hospital' };
+  }
+
+  const patientsAhead = slotCheck.current_bookings;
+
+  const slot = await Slot.findOneAndUpdate(
+    { _id: slot_id, $expr: { $lt: ['$current_bookings', '$capacity'] } },
+    { $inc: { current_bookings: 1 } },
+    { new: true }
+  );
+
+  if (!slot) {
+    return {
+      error: 'slot_full',
+      message: 'Slot is full',
+      suggestion: 'Please join waitlist or choose another slot'
+    };
+  }
+
+  const doctor = await Doctor.findById(doctor_id);
+  if (!doctor) {
+    return { error: 'not_found', message: 'Doctor not found' };
+  }
+
+  const estimatedWait = calculateWaitTime(patientsAhead, doctor.avg_consultation_mins);
+
+  updateSlotStatus(slot);
+  await slot.save();
+
+  await Doctor.findByIdAndUpdate(doctor_id, {
+    $inc: { current_patients_today: 1 }
+  });
+
+  const appointment = new Appointment({
+    patient_id,
+    doctor_id,
+    slot_id,
+    hospital_id,
+    department,
+    symptoms,
+    priority: normalizePriority(priority),
+    estimated_wait_mins: estimatedWait
+  });
+  await appointment.save();
+
+  return { appointment, estimated_wait_mins: estimatedWait };
+}
+
 router.post('/', async (req, res) => {
   try {
-    const {
-      patient_id,
-      doctor_id,
-      slot_id,
-      hospital_id,
-      department,
-      symptoms,
-      priority
-    } = req.body;
+    const result = await createAppointment(req.body);
 
-    const slotCheck = await Slot.findById(slot_id);
-    if (!slotCheck) {
-      return res.status(404).json({ message: 'Slot not found' });
+    if (result.error === 'not_found') {
+      return res.status(404).json({ message: result.message });
     }
-    if (String(slotCheck.doctor_id) !== String(doctor_id)) {
-      return res.status(400).json({ message: 'Selected slot does not belong to this doctor' });
+    if (result.error === 'mismatch') {
+      return res.status(400).json({ message: result.message });
     }
-    if (String(slotCheck.hospital_id) !== String(hospital_id)) {
-      return res.status(400).json({ message: 'Selected slot does not belong to this hospital' });
+    if (result.error === 'slot_full') {
+      return res.status(400).json({ message: result.message, suggestion: result.suggestion });
     }
-
-    const patientsAhead = slotCheck.current_bookings;
-
-    const slot = await Slot.findOneAndUpdate(
-      { _id: slot_id, $expr: { $lt: ['$current_bookings', '$capacity'] } },
-      { $inc: { current_bookings: 1 } },
-      { new: true }
-    );
-
-    if (!slot) {
-      return res.status(400).json({
-        message: 'Slot is full',
-        suggestion: 'Please join waitlist or choose another slot'
-      });
-    }
-
-    const doctor = await Doctor.findById(doctor_id);
-    if (!doctor) {
-      return res.status(404).json({ message: 'Doctor not found' });
-    }
-
-    const estimatedWait = calculateWaitTime(
-      patientsAhead,
-      doctor.avg_consultation_mins
-    );
-
-    updateSlotStatus(slot);
-    await slot.save();
-
-    await Doctor.findByIdAndUpdate(doctor_id, {
-      $inc: { current_patients_today: 1 }
-    });
-
-    const appointment = new Appointment({
-      patient_id,
-      doctor_id,
-      slot_id,
-      hospital_id,
-      department,
-      symptoms,
-      priority: normalizePriority(priority),
-      estimated_wait_mins: estimatedWait
-    });
-    await appointment.save();
 
     res.status(201).json({
-      appointment,
-      estimated_wait_mins: estimatedWait,
+      appointment: result.appointment,
+      estimated_wait_mins: result.estimated_wait_mins,
       message: 'Appointment booked successfully'
     });
   } catch (err) {
@@ -352,3 +356,4 @@ router.get('/:id/followup', async (req, res) => {
 
 module.exports = router;
 module.exports.autoCompleteExpiredAppointments = autoCompleteExpiredAppointments;
+module.exports.createAppointment = createAppointment;

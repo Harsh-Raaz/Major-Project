@@ -4,6 +4,8 @@ const axios = require('axios');
 const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
+const { createAppointment } = require('./appointments');
+const Patient = require('../models/Patient');
 const {
   suggestDepartment,
   recommendHospitals,
@@ -53,6 +55,47 @@ async function getScoredHospitalsForDepartment(department, patientLat, patientLn
   );
 
   return recommendHospitals(hospitalData, patientLat, patientLng);
+}
+
+const _bookingSessions = {};
+
+function _getBookingSession(sessionId) {
+  if (!_bookingSessions[sessionId]) {
+    _bookingSessions[sessionId] = { stage: null };
+  }
+  return _bookingSessions[sessionId];
+}
+
+function _resetBookingSession(sessionId) {
+  delete _bookingSessions[sessionId];
+}
+
+function _matchByNumberOrName(message, options, nameField) {
+  const trimmed = message.trim();
+  const asNumber = parseInt(trimmed, 10);
+  if (!isNaN(asNumber) && asNumber >= 1 && asNumber <= options.length) {
+    return options[asNumber - 1];
+  }
+  const lowered = trimmed.toLowerCase();
+  return options.find((opt) => String(opt[nameField]).toLowerCase().includes(lowered)) || null;
+}
+
+function _formatHospitalList(hospitals) {
+  return hospitals
+    .map((h, i) => `${i + 1}. ${h.name} - ${h.distance_km} km away, rated ${h.rating}`)
+    .join('\n');
+}
+
+function _formatDoctorList(doctors) {
+  return doctors
+    .map((d, i) => `${i + 1}. ${d.name} - ${d.experience_years} yrs experience, rated ${d.rating}`)
+    .join('\n');
+}
+
+function _formatSlotList(slots) {
+  return slots
+    .map((s, i) => `${i + 1}. ${s.start_time} - ${s.end_time} (${s.status})`)
+    .join('\n');
 }
 
 router.post('/suggest-department', async (req, res) => {
@@ -251,6 +294,202 @@ router.post('/chatbot/reset', async (req, res) => {
     res.status(500).json({
       message: err.message
     });
+  }
+});
+
+router.post('/chatbot/booking-message', async (req, res) => {
+  try {
+    const { session_id, message, patient_id, department, patient_lat, patient_lng } = req.body || {};
+
+    if (!session_id || !message || typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ message: 'session_id and message are required' });
+    }
+
+    const booking = _getBookingSession(session_id);
+
+    if (booking.stage === null) {
+      if (!department) {
+        return res.status(400).json({ message: 'department is required to start a booking session' });
+      }
+      const hospitals = await getScoredHospitalsForDepartment(
+        department,
+        patient_lat || 12.9716,
+        patient_lng || 77.5946
+      );
+      if (!Array.isArray(hospitals) || hospitals.length === 0) {
+        return res.json({
+          reply: 'No hospitals are currently available for this department.',
+          stage: 'no_options',
+          session_id
+        });
+      }
+      booking.stage = 'choose_hospital';
+      booking.department = department;
+      booking.hospitals = hospitals.slice(0, 5);
+      return res.json({
+        reply: `Here are hospitals for ${department}. Reply with a number to choose one:\n\n${_formatHospitalList(booking.hospitals)}`,
+        stage: booking.stage,
+        options: booking.hospitals,
+        session_id
+      });
+    }
+
+    if (booking.stage === 'choose_hospital') {
+      const chosen = _matchByNumberOrName(message, booking.hospitals, 'name');
+      if (!chosen) {
+        return res.json({
+          reply: `I didn't recognize that. Please reply with a number from 1 to ${booking.hospitals.length}, or the hospital name.`,
+          stage: booking.stage,
+          options: booking.hospitals,
+          session_id
+        });
+      }
+      booking.selected_hospital = chosen;
+
+      const Doctor = require('../models/Doctor');
+      const doctors = await Doctor.find({
+        hospital_id: chosen._id,
+        department: booking.department,
+        available: true
+      });
+      const doctorData = doctors.map((d) => ({
+        _id: d._id,
+        name: d.name,
+        department: d.department,
+        rating: d.rating,
+        experience_years: d.experience_years,
+        current_patients_today: d.current_patients_today,
+        max_patients_per_day: d.max_patients_per_day,
+        avg_consultation_mins: d.avg_consultation_mins,
+        qualification: d.qualification
+      }));
+      const scoredDoctors = await recommendDoctors(doctorData);
+
+      if (!Array.isArray(scoredDoctors) || scoredDoctors.length === 0) {
+        _resetBookingSession(session_id);
+        return res.json({
+          reply: `No doctors are currently available at ${chosen.name} for this department. Please try a different hospital by starting again.`,
+          stage: 'no_options',
+          session_id
+        });
+      }
+
+      booking.stage = 'choose_doctor';
+      booking.doctors = scoredDoctors.slice(0, 5);
+      return res.json({
+        reply: `You chose ${chosen.name}. Here are available doctors:\n\n${_formatDoctorList(booking.doctors)}`,
+        stage: booking.stage,
+        options: booking.doctors,
+        session_id
+      });
+    }
+
+    if (booking.stage === 'choose_doctor') {
+      const chosen = _matchByNumberOrName(message, booking.doctors, 'name');
+      if (!chosen) {
+        return res.json({
+          reply: `I didn't recognize that. Please reply with a number from 1 to ${booking.doctors.length}, or the doctor's name.`,
+          stage: booking.stage,
+          options: booking.doctors,
+          session_id
+        });
+      }
+      booking.selected_doctor = chosen;
+
+      const today = new Date().toISOString().split('T')[0];
+      const slots = await Slot.find({
+        doctor_id: chosen._id,
+        date: today,
+        status: { $ne: 'full' }
+      }).sort({ start_time: 1 });
+
+      if (!slots.length) {
+        _resetBookingSession(session_id);
+        return res.json({
+          reply: `No available slots for Dr. ${chosen.name} today. Please try a different doctor by starting again.`,
+          stage: 'no_options',
+          session_id
+        });
+      }
+
+      booking.stage = 'choose_slot';
+      booking.slots = slots.slice(0, 6);
+      return res.json({
+        reply: `You chose Dr. ${chosen.name}. Here are available slots today:\n\n${_formatSlotList(booking.slots)}`,
+        stage: booking.stage,
+        options: booking.slots,
+        session_id
+      });
+    }
+
+    if (booking.stage === 'choose_slot') {
+      const trimmed = message.trim();
+      const asNumber = parseInt(trimmed, 10);
+      const chosen = (!isNaN(asNumber) && asNumber >= 1 && asNumber <= booking.slots.length)
+        ? booking.slots[asNumber - 1]
+        : null;
+      if (!chosen) {
+        return res.json({
+          reply: `Please reply with a number from 1 to ${booking.slots.length} to choose a slot.`,
+          stage: booking.stage,
+          options: booking.slots,
+          session_id
+        });
+      }
+      booking.selected_slot = chosen;
+      booking.stage = 'confirm';
+      return res.json({
+        reply: `Confirm booking: Dr. ${booking.selected_doctor.name} at ${booking.selected_hospital.name}, ${chosen.start_time}-${chosen.end_time} today. Reply "yes" to confirm or "no" to cancel.`,
+        stage: booking.stage,
+        session_id
+      });
+    }
+
+    if (booking.stage === 'confirm') {
+      const lowered = message.trim().toLowerCase();
+      if (lowered !== 'yes' && lowered !== 'confirm') {
+        _resetBookingSession(session_id);
+        return res.json({
+          reply: 'Booking cancelled. Let me know if you would like to start over.',
+          stage: 'cancelled',
+          session_id
+        });
+      }
+      if (!patient_id) {
+        return res.status(400).json({ message: 'patient_id is required to confirm a booking' });
+      }
+
+      const result = await createAppointment({
+        patient_id,
+        doctor_id: booking.selected_doctor._id,
+        slot_id: booking.selected_slot._id,
+        hospital_id: booking.selected_hospital._id,
+        department: booking.department,
+        symptoms: '',
+        priority: 'normal'
+      });
+
+      if (result.error) {
+        _resetBookingSession(session_id);
+        return res.json({
+          reply: `Sorry, that booking could not be completed: ${result.message}. Please start over if you'd like to try again.`,
+          stage: 'failed',
+          session_id
+        });
+      }
+
+      _resetBookingSession(session_id);
+      return res.json({
+        reply: `Your appointment is confirmed with Dr. ${booking.selected_doctor?.name || ''} at ${booking.selected_hospital?.name || ''}. Estimated wait time: ${result.estimated_wait_mins} minutes.`,
+        stage: 'booked',
+        appointment: result.appointment,
+        session_id
+      });
+    }
+
+    return res.status(400).json({ message: 'Unknown booking stage' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
