@@ -8,7 +8,7 @@ export default function AlertBox({ type = "info", text }) {
         ? "border-amber-200 bg-amber-50 text-amber-800"
         : type === "success"
           ? "border-[rgba(0,184,169,0.18)] bg-[#F0FDF9] text-[#0A1628]"
-          : "border-slate-200 bg-slate-50 text-slate-700";
+          : "border-sky-200 bg-sky-50 text-sky-800";
 
   return (
     <div className={`rounded-[20px] border p-4 shadow-[0_4px_24px_rgba(0,184,169,0.08)] ${classes}`}>
