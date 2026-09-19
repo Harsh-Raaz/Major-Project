@@ -94,7 +94,7 @@ function _formatDoctorList(doctors) {
 
 function _formatSlotList(slots) {
   return slots
-    .map((s, i) => `${i + 1}. ${s.start_time} - ${s.end_time} (${s.status})`)
+    .map((s, i) => `${i + 1}. ${s.date} ${s.start_time} - ${s.end_time} (${s.status})`)
     .join('\n');
 }
 
@@ -396,26 +396,29 @@ router.post('/chatbot/booking-message', async (req, res) => {
       }
       booking.selected_doctor = chosen;
 
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const currentTime = now.toTimeString().slice(0, 5);
       const slots = await Slot.find({
         doctor_id: chosen._id,
-        date: today,
+        date: { $gte: today },
         status: { $ne: 'full' }
-      }).sort({ start_time: 1 });
+      }).sort({ date: 1, start_time: 1 });
+      const upcomingSlots = slots.filter((slot) => slot.date > today || slot.start_time > currentTime);
 
-      if (!slots.length) {
+      if (!upcomingSlots.length) {
         _resetBookingSession(session_id);
         return res.json({
-          reply: `No available slots for Dr. ${chosen.name} today. Please try a different doctor by starting again.`,
+          reply: `No upcoming slots for ${chosen.name}. Please try a different doctor by starting again.`,
           stage: 'no_options',
           session_id
         });
       }
 
       booking.stage = 'choose_slot';
-      booking.slots = slots.slice(0, 6);
+      booking.slots = upcomingSlots.slice(0, 6);
       return res.json({
-        reply: `You chose Dr. ${chosen.name}. Here are available slots today:\n\n${_formatSlotList(booking.slots)}`,
+        reply: `You chose ${chosen.name}. Here are upcoming slots:\n\n${_formatSlotList(booking.slots)}`,
         stage: booking.stage,
         options: booking.slots,
         session_id
@@ -439,7 +442,7 @@ router.post('/chatbot/booking-message', async (req, res) => {
       booking.selected_slot = chosen;
       booking.stage = 'confirm';
       return res.json({
-        reply: `Confirm booking: Dr. ${booking.selected_doctor.name} at ${booking.selected_hospital.name}, ${chosen.start_time}-${chosen.end_time} today. Reply "yes" to confirm or "no" to cancel.`,
+        reply: `Confirm booking: ${booking.selected_doctor.name} at ${booking.selected_hospital.name}, ${chosen.date} ${chosen.start_time}-${chosen.end_time}. Reply "yes" to confirm or "no" to cancel.`,
         stage: booking.stage,
         session_id
       });
