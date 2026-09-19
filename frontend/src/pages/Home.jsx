@@ -77,38 +77,65 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="animate-fade-up">
+          <div className="flex flex-col justify-center animate-fade-up">
             <p className="cc-eyebrow text-white/70 border-white/15">
               Clinical Precision
             </p>
-            <h1 className="mt-5 max-w-3xl font-display text-4xl font-bold leading-tight md:text-6xl">
-              Find the right hospital, the right doctor, at the right time.
+            <h1 className="mt-5 font-display text-5xl font-bold leading-[1.08] md:text-6xl lg:text-7xl">
+              Find the right hospital,<br />
+              the right doctor,<br />
+              at the right time.
             </h1>
-            <p className="mt-5 max-w-2xl text-lg text-white/72">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/75">
               CrowdCare combines symptom triage, hospital discovery, and booking
               intelligence in one calm, modern care journey.
             </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <a href="#symptom-search" className="cc-btn-primary px-7 py-4 text-base">
+                Search Care Path
+              </a>
+              <a href="/hospitals" className="rounded-full border border-white/25 px-7 py-4 text-base font-semibold text-white hover:border-white hover:bg-white/5 transition">
+                Browse Hospitals
+              </a>
+            </div>
+            <div className="mt-10 flex flex-wrap gap-8">
+              <div>
+                <p className="font-display text-3xl font-bold text-[#00B8A9]">7+</p>
+                <p className="mt-1 text-sm text-white/60">Bengaluru hospitals</p>
+              </div>
+              <div>
+                <p className="font-display text-3xl font-bold text-[#00B8A9]">10</p>
+                <p className="mt-1 text-sm text-white/60">Departments covered</p>
+              </div>
+              <div>
+                <p className="font-display text-3xl font-bold text-[#00B8A9]">AI</p>
+                <p className="mt-1 text-sm text-white/60">Powered triage</p>
+              </div>
+            </div>
           </div>
 
-          <div className="cc-glass animate-fade-up rounded-[28px] p-5 md:p-6">
+          <div id="symptom-search" className="cc-glass animate-fade-up rounded-[28px] p-6 md:p-8">
             <h2 className="font-display text-2xl font-semibold text-white">
               Start with symptoms
             </h2>
-            <p className="mt-2 text-sm text-white/65">
-              We will suggest a department, surface seasonal risk alerts, and
-              route you into hospital recommendations without changing your current flow.
+            <p className="mt-2 text-sm leading-relaxed text-white/65">
+              Describe what you're feeling. We'll suggest the right department,
+              flag seasonal disease risks, and find you the best available doctor.
             </p>
             <div className="mt-6 flex flex-col gap-3">
               <textarea
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                className="min-h-[148px] rounded-[22px] border border-white/15 bg-white/95 px-4 py-4 text-[#0A1628] outline-none ring-0 placeholder:text-slate-400 focus:border-[#00B8A9]"
+                className="min-h-[148px] rounded-[22px] border border-white/15 bg-white/95 px-4 py-4 text-[#0A1628] outline-none placeholder:text-slate-400 focus:border-[#00B8A9]"
                 placeholder="Describe symptoms, duration, severity, and any warning signs"
               />
-              <button onClick={onSearch} className="cc-btn-primary justify-center">
-                {loading ? <Loader small /> : "Search Care Path"}
+              <button onClick={onSearch} className="cc-btn-primary justify-center py-4 text-base font-bold">
+                {loading ? 'Searching...' : 'Search Care Path →'}
               </button>
             </div>
+            <p className="mt-4 text-center text-xs text-white/45">
+              Free · No registration required · Not a substitute for emergency care
+            </p>
           </div>
         </div>
       </section>
@@ -217,6 +244,73 @@ export default function Home() {
             <p className="mt-3 text-sm leading-6 text-slate-600">{item.text}</p>
           </div>
         ))}
+      </section>
+
+      <section className="mt-16 animate-fade-up">
+        <div className="mb-10 text-center">
+          <p className="cc-eyebrow">Simple by design</p>
+          <h2 className="mt-3 font-display text-3xl font-bold text-[#0A1628] md:text-4xl">
+            From symptoms to booking in minutes
+          </h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              step: '01',
+              title: 'Describe symptoms',
+              body: 'Type what you feel. No medical jargon needed.',
+            },
+            {
+              step: '02',
+              title: 'Get department guidance',
+              body: 'AI routes you to the right specialist area instantly.',
+            },
+            {
+              step: '03',
+              title: 'Compare hospitals',
+              body: 'Ranked by wait time, distance, rating, and availability.',
+            },
+            {
+              step: '04',
+              title: 'Book in seconds',
+              body: 'Confirm your slot. No phone calls, no queues.',
+            },
+          ].map((item) => (
+            <div
+              key={item.step}
+              className="rounded-[20px] border border-[rgba(0,184,169,0.14)] bg-white p-6 shadow-[0_4px_24px_rgba(0,184,169,0.07)]"
+            >
+              <span className="font-display text-4xl font-bold text-[#00B8A9]/25">
+                {item.step}
+              </span>
+              <h3 className="mt-3 font-display text-lg font-semibold text-[#0A1628]">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                {item.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 overflow-hidden rounded-[28px] bg-[#0A1628] px-8 py-10 md:px-12">
+        <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
+          <div>
+            <p className="font-display text-2xl font-bold text-white md:text-3xl">
+              Ready to find the right care?
+            </p>
+            <p className="mt-2 text-white/60">
+              Join thousands of patients making smarter healthcare decisions.
+            </p>
+          </div>
+          <a
+            href="/chatbot"
+            className="cc-btn-primary whitespace-nowrap px-8 py-4 text-base"
+          >
+            Try Care Assistant →
+          </a>
+        </div>
       </section>
     </AppLayout>
   );

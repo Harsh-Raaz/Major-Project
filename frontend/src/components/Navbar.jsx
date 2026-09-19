@@ -17,6 +17,10 @@ export default function Navbar() {
   };
 
   return (
+    <>
+      <div className="bg-[#00B8A9] py-1.5 text-center text-xs font-semibold text-white tracking-wide">
+        AI-powered hospital discovery &amp; appointment booking — free for patients
+      </div>
     <nav className="sticky top-0 z-30 border-b border-white/10 bg-[#0A1628]/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
         <NavLink to="/" className="font-display text-xl font-bold text-white">
@@ -121,5 +125,6 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+    </>
   );
 }

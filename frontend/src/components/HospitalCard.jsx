@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MapPin, ArrowRightLeft, Route } from "lucide-react";
-import { scoreClass, starText } from "../utils/helpers";
+import { scoreClass } from "../utils/helpers";
 
 export default function HospitalCard({
   hospital,
@@ -15,7 +15,6 @@ export default function HospitalCard({
   const address =
     hospital.address ||
     [hospital.location?.address, hospital.location?.city].filter(Boolean).join(", ");
-  const rating = hospital.rating?.overall ?? hospital.rating ?? 4;
   return (
     <article className="cc-surface relative overflow-hidden p-5 animate-fade-up">
       <div className="absolute inset-y-0 left-0 w-1 bg-[#00B8A9]" />
@@ -48,8 +47,26 @@ export default function HospitalCard({
       <div className="mt-5 grid gap-3 pl-3 text-sm text-slate-700 md:grid-cols-4">
         <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
           <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rating</p>
-          <p className="mt-2 font-semibold text-[#0A1628]">
-            {starText(rating)} ({rating})
+          <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-[#0A1628]">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <svg
+                key={star}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                fill={star <= Math.round(Number(hospital.rating?.overall ?? hospital.rating ?? 0))
+                  ? '#F59E0B'
+                  : 'none'}
+                stroke="#F59E0B"
+                strokeWidth="1.5"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                  12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+            <span className="ml-1 text-slate-500">
+              ({hospital.rating?.overall ?? hospital.rating ?? '—'})
+            </span>
           </p>
         </div>
         <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">

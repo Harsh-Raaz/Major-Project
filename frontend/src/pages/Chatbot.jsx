@@ -310,6 +310,25 @@ export default function Chatbot() {
                 ) : (
                   <div key={message.id} className="flex flex-col gap-2">
                     <ChatMessage message={message} />
+                    {message.id === 'welcome' && !isSending && messages.length === 1 && (
+                      <div className="flex flex-wrap gap-2 pl-12">
+                        {[
+                          'I have a fever and headache',
+                          'Chest pain since morning',
+                          'My child has a rash',
+                          'Knee pain for 3 days',
+                        ].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => setInput(suggestion)}
+                            className="rounded-full border border-[rgba(0,184,169,0.25)] bg-white px-3 py-1.5 text-xs font-medium text-[#00B8A9] transition hover:border-[#00B8A9] hover:bg-[#F0FDF9]"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {message.responseType === "triage_complete" && (
                       <TriageSummaryCard
                         message={message}
