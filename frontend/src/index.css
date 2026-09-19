@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* KEEP existing custom CSS below this */
+
+:root {
+  --cc-dark: #0a1628;
+  --cc-teal: #00b8a9;
+  --cc-mint: #f0fdf9;
+  --cc-amber: #f59e0b;
+  --cc-surface: #ffffff;
+  --cc-line: rgba(0, 184, 169, 0.15);
+  --cc-shadow: 0 4px 24px rgba(0, 184, 169, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f7fbfa 0%, #f4f8fb 100%);
+  color: var(--cc-dark);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: "Sora", sans-serif;
+}
+
+.animate-fade-up {
+  animation: cc-fade-up 0.4s ease-out both;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s infinite;
+}
+
+.cc-surface {
+  border: 1px solid var(--cc-line);
+  border-radius: 16px;
+  background: var(--cc-surface);
+  box-shadow: var(--cc-shadow);
+}
+
+.cc-glass {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 45px rgba(10, 22, 40, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.cc-hero-grid {
+  background:
+    radial-gradient(circle at top left, rgba(0, 184, 169, 0.22), transparent 32%),
+    radial-gradient(circle at right center, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(120deg, #063842 0%, #0a1628 38%, #112640 100%);
+}
+
+.cc-title {
+  font-family: "Sora", sans-serif;
+  color: var(--cc-dark);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.cc-muted {
+  color: #64748b;
+}
+
+.cc-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-bottom: 1px solid rgba(0, 184, 169, 0.12);
+  padding-bottom: 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #5f6f81;
+}
+
+.cc-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cc-field > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.cc-field input,
+.cc-field select,
+.cc-field textarea {
+  width: 100%;
+  border: 1px solid rgba(0, 184, 169, 0.15);
+  border-radius: 18px;
+  background: #fff;
+  padding: 0.95rem 1rem;
+  color: var(--cc-dark);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cc-field input::placeholder,
+.cc-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+.cc-field input:focus,
+.cc-field select:focus,
+.cc-field textarea:focus {
+  border-color: rgba(0, 184, 169, 0.55);
+  box-shadow: 0 0 0 3px rgba(0, 184, 169, 0.12);
+}
+
+.cc-btn-primary,
+.cc-btn-secondary,
+.cc-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  padding: 0.85rem 1.3rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.cc-btn-primary {
+  background: var(--cc-teal);
+  color: white;
+  box-shadow: 0 14px 28px rgba(0, 184, 169, 0.24);
+}
+
+.cc-btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.cc-btn-secondary {
+  border: 1px solid var(--cc-line);
+  background: white;
+  color: var(--cc-teal);
+}
+
+.cc-btn-danger {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+@keyframes cc-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cc-chat-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cc-chat-enter {
+  animation: cc-chat-in 200ms ease-out both;
+}

@@ -22,63 +22,122 @@ function updateSlotStatus(slot) {
   return slot;
 }
 
+function normalizePriority(priority) {
+  const value = String(priority || 'normal').toLowerCase();
+  return ['normal', 'urgent', 'emergency'].includes(value) ? value : 'normal';
+}
+
+async function autoCompleteExpiredAppointments() {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const currentTime = now.toTimeString().slice(0, 5);
+
+  const expiredSlots = await Slot.find({
+    $or: [
+      { date: { $lt: todayStr } },
+      { date: todayStr, end_time: { $lte: currentTime } }
+    ]
+  });
+
+  if (expiredSlots.length === 0) {
+    return 0;
+  }
+
+  const expiredSlotIds = expiredSlots.map((slot) => slot._id);
+  const result = await Appointment.updateMany(
+    {
+      slot_id: { $in: expiredSlotIds },
+      status: { $in: ['confirmed', 'rescheduled'] }
+    },
+    { $set: { status: 'completed' } }
+  );
+
+  return result.modifiedCount || 0;
+}
+
+router.get('/autocomplete', async (req, res) => {
+  try {
+    const completedCount = await autoCompleteExpiredAppointments();
+    res.json({ completed_count: completedCount });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+async function createAppointment({ patient_id, doctor_id, slot_id, hospital_id, department, symptoms, priority }) {
+  const slotCheck = await Slot.findById(slot_id);
+  if (!slotCheck) {
+    return { error: 'not_found', message: 'Slot not found' };
+  }
+  if (String(slotCheck.doctor_id) !== String(doctor_id)) {
+    return { error: 'mismatch', message: 'Selected slot does not belong to this doctor' };
+  }
+  if (String(slotCheck.hospital_id) !== String(hospital_id)) {
+    return { error: 'mismatch', message: 'Selected slot does not belong to this hospital' };
+  }
+
+  const patientsAhead = slotCheck.current_bookings;
+
+  const slot = await Slot.findOneAndUpdate(
+    { _id: slot_id, $expr: { $lt: ['$current_bookings', '$capacity'] } },
+    { $inc: { current_bookings: 1 } },
+    { new: true }
+  );
+
+  if (!slot) {
+    return {
+      error: 'slot_full',
+      message: 'Slot is full',
+      suggestion: 'Please join waitlist or choose another slot'
+    };
+  }
+
+  const doctor = await Doctor.findById(doctor_id);
+  if (!doctor) {
+    return { error: 'not_found', message: 'Doctor not found' };
+  }
+
+  const estimatedWait = calculateWaitTime(patientsAhead, doctor.avg_consultation_mins);
+
+  updateSlotStatus(slot);
+  await slot.save();
+
+  await Doctor.findByIdAndUpdate(doctor_id, {
+    $inc: { current_patients_today: 1 }
+  });
+
+  const appointment = new Appointment({
+    patient_id,
+    doctor_id,
+    slot_id,
+    hospital_id,
+    department,
+    symptoms,
+    priority: normalizePriority(priority),
+    estimated_wait_mins: estimatedWait
+  });
+  await appointment.save();
+
+  return { appointment, estimated_wait_mins: estimatedWait };
+}
+
 router.post('/', async (req, res) => {
   try {
-    const {
-      patient_id,
-      doctor_id,
-      slot_id,
-      hospital_id,
-      department,
-      symptoms,
-      priority
-    } = req.body;
+    const result = await createAppointment(req.body);
 
-    const slot = await Slot.findById(slot_id);
-    if (!slot) {
-      return res.status(404).json({ message: 'Slot not found' });
+    if (result.error === 'not_found') {
+      return res.status(404).json({ message: result.message });
     }
-    if (slot.status === 'full') {
-      return res.status(400).json({
-        message: 'Slot is full',
-        suggestion: 'Please join waitlist or choose another slot'
-      });
+    if (result.error === 'mismatch') {
+      return res.status(400).json({ message: result.message });
     }
-
-    const doctor = await Doctor.findById(doctor_id);
-    if (!doctor) {
-      return res.status(404).json({ message: 'Doctor not found' });
+    if (result.error === 'slot_full') {
+      return res.status(400).json({ message: result.message, suggestion: result.suggestion });
     }
-
-    const patientsAhead = slot.current_bookings;
-    const estimatedWait = calculateWaitTime(
-      patientsAhead,
-      doctor.avg_consultation_mins
-    );
-
-    slot.current_bookings += 1;
-    updateSlotStatus(slot);
-    await slot.save();
-
-    await Doctor.findByIdAndUpdate(doctor_id, {
-      $inc: { current_patients_today: 1 }
-    });
-
-    const appointment = new Appointment({
-      patient_id,
-      doctor_id,
-      slot_id,
-      hospital_id,
-      department,
-      symptoms,
-      priority,
-      estimated_wait_mins: estimatedWait
-    });
-    await appointment.save();
 
     res.status(201).json({
-      appointment,
-      estimated_wait_mins: estimatedWait,
+      appointment: result.appointment,
+      estimated_wait_mins: result.estimated_wait_mins,
       message: 'Appointment booked successfully'
     });
   } catch (err) {
@@ -95,6 +154,71 @@ router.get('/patient/:patient_id', async (req, res) => {
       .populate('hospital_id', 'name location')
       .populate('slot_id', 'date start_time end_time');
     res.json(appointments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+const binaryFeature = (value) => (Number(value) === 1 ? 1 : 0);
+const historyIncludes = (history, term) =>
+  (history || []).some((item) => String(item).toLowerCase().includes(term));
+
+const buildNoShowFeatures = (appointment) => {
+  const patient = appointment.patient_id || {};
+  const slot = appointment.slot_id || {};
+  const history = patient.medical_history || [];
+  const slotDate = slot.date ? new Date(`${slot.date}T00:00:00`) : null;
+  const bookedAt = appointment.booking_time || appointment.createdAt;
+  const leadTime = slotDate && bookedAt
+    ? Math.max(0, Math.ceil((slotDate - new Date(bookedAt)) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  return {
+    // Age 30 and lead time 1 match the AI service's documented fallback values.
+    age: Number.isFinite(Number(patient.age)) ? Number(patient.age) : 30,
+    scholarship: binaryFeature(patient.scholarship),
+    hypertension: binaryFeature(patient.hypertension) || Number(historyIncludes(history, 'hypertension')),
+    diabetes: binaryFeature(patient.diabetes) || Number(historyIncludes(history, 'diabetes')),
+    alcoholism: binaryFeature(patient.alcoholism) || Number(historyIncludes(history, 'alcohol')),
+    handicap: Number.isFinite(Number(patient.handicap)) ? Number(patient.handicap) : 0,
+    sms_received: binaryFeature(patient.sms_received),
+    lead_time_days: leadTime,
+    appointment_dow: slotDate ? slotDate.getDay() : 1,
+    patient_appt_count: appointment.patient_appt_count || 1,
+    gender_female: String(patient.gender || '').toLowerCase() === 'female' ? 1 : 0
+  };
+};
+
+router.get('/doctor/:doctor_id', async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ doctor_id: req.params.doctor_id })
+      .populate(
+        'patient_id',
+        'name age gender phone email medical_history scholarship hypertension diabetes alcoholism handicap sms_received'
+      )
+      .populate('slot_id', 'date start_time end_time')
+      .populate('hospital_id', 'name location')
+      .sort({ createdAt: -1 });
+
+    const patientIds = [...new Set(
+      appointments.map((appointment) => String(appointment.patient_id?._id || appointment.patient_id))
+    )];
+    const patientCounts = await Promise.all(
+      patientIds.map(async (patientId) => [
+        patientId,
+        await Appointment.countDocuments({ patient_id: patientId })
+      ])
+    );
+    const countsByPatientId = new Map(patientCounts);
+
+    const data = appointments.map((appointment) => {
+      const serialized = appointment.toObject();
+      serialized.patient_appt_count = countsByPatientId.get(String(serialized.patient_id?._id)) || 1;
+      serialized.no_show_features = buildNoShowFeatures(serialized);
+      return serialized;
+    });
+
+    res.json({ appointments: data });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -231,3 +355,5 @@ router.get('/:id/followup', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.autoCompleteExpiredAppointments = autoCompleteExpiredAppointments;
+module.exports.createAppointment = createAppointment;

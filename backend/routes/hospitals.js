@@ -4,7 +4,7 @@ const Hospital = require('../models/Hospital');
 
 router.get('/', async (req, res) => {
   try {
-    const hospitals = await Hospital.find({ is_active: true });
+    const hospitals = await Hospital.find();
     res.json(hospitals);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -15,13 +15,24 @@ router.post('/compare', async (req, res) => {
   try {
     const Slot = require('../models/Slot');
     const Doctor = require('../models/Doctor');
-    const { hospital_ids: hospitalIds } = req.body;
+    const { hospital_ids: hospitalIds, patient_lat, patient_lng } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     const results = await Promise.all(
       (hospitalIds || []).map(async (hospitalId) => {
         const hospital = await Hospital.findById(hospitalId);
         if (!hospital) return null;
+
+        let distance_km = null;
+        if (patient_lat != null && patient_lng != null && hospital.location) {
+          const R = 6371, PI = Math.PI;
+          const dLat = ((hospital.location.lat - patient_lat) * PI) / 180;
+          const dLng = ((hospital.location.lng - patient_lng) * PI) / 180;
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos((patient_lat * PI) / 180) *
+                    Math.cos((hospital.location.lat * PI) / 180) * Math.sin(dLng / 2) ** 2;
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          distance_km = Math.round(R * c * 100) / 100;
+        }
 
         const totalSlotsToday = await Slot.countDocuments({
           hospital_id: hospitalId,
@@ -32,10 +43,7 @@ router.post('/compare', async (req, res) => {
           date: today,
           status: { $ne: 'full' }
         });
-        const availableDoctors = await Doctor.find({
-          hospital_id: hospitalId,
-          available: true
-        });
+        const availableDoctors = await Doctor.find({ hospital_id: hospitalId });
         const avgDoctorRating =
           availableDoctors.length > 0
             ? availableDoctors.reduce((s, d) => s + (d.rating || 0), 0) /
@@ -45,6 +53,7 @@ router.post('/compare', async (req, res) => {
         const hospitalObj = hospital.toObject();
         return {
           ...hospitalObj,
+          distance_km,
           total_slots_today: totalSlotsToday,
           available_slots_today: availableSlotsToday,
           available_doctors_count: availableDoctors.length,
@@ -80,10 +89,21 @@ router.get('/:id/route', async (req, res) => {
 
     const patientLat = parseFloat(req.query.patient_lat);
     const patientLng = parseFloat(req.query.patient_lng);
+    if (Number.isNaN(patientLat) || Number.isNaN(patientLng)) {
+      return res.status(400).json({
+        message: 'patient_lat and patient_lng are required'
+      });
+    }
     const R = 6371;
     const PI = Math.PI;
-    const hLat = hospital.location.lat;
-    const hLng = hospital.location.lng;
+    const hLat = hospital.location && hospital.location.lat;
+    const hLng = hospital.location && hospital.location.lng;
+
+    if (!Number.isFinite(hLat) || !Number.isFinite(hLng)) {
+      return res.status(400).json({
+        message: 'Hospital location coordinates are not available'
+      });
+    }
 
     const dLat = ((hLat - patientLat) * PI) / 180;
     const dLng = ((hLng - patientLng) * PI) / 180;
