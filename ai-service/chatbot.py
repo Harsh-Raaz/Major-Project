@@ -188,6 +188,96 @@ def _generate_faq_answer(entry, user_message):
         print(f"[chatbot] Ollama unavailable for FAQ answer, using fact directly: {error}", flush=True)
         return fact
 
+JARGON_TRIGGER_PATTERNS = [
+    r"what does\s+(.+?)\s+mean\b",
+    r"what is\s+(.+?)(?:\?|$)",
+    r"explain\s+(.+?)(?:\?|$)",
+    r"meaning of\s+(.+?)(?:\?|$)",
+    r"translate\s+(.+?)(?:\?|$)",
+    r"can you explain\s+(.+?)(?:\?|$)",
+]
+
+# If the extracted term matches one of these, this is a question about the
+# platform itself, not a medical term - let FAQ or symptom routing handle
+# it instead. Prevents jargon detection from swallowing platform questions
+# that were phrased slightly differently than the FAQ keyword list expects.
+NON_JARGON_TERMS = [
+    "urgent", "emergency", "priority", "wait time", "no-show", "no show",
+    "hospital score", "doctor score", "waitlist", "seasonal alert",
+    "this app", "crowdcare", "this system", "this website",
+]
+
+
+def _extract_jargon_term(text):
+    lowered = text.lower().strip()
+    for pattern in JARGON_TRIGGER_PATTERNS:
+        match = re.search(pattern, lowered)
+        if match:
+            term = match.group(1).strip(" ?.!")
+            if not term or len(term) > 100:
+                continue
+            if any(nj in term for nj in NON_JARGON_TERMS):
+                continue
+            return term
+    return None
+
+JARGON_SYSTEM_PROMPT = """You are CrowdCare's medical jargon translator. A
+patient has given you a medical term, abbreviation, or a line from a report
+and wants it explained in plain language.
+
+Rules:
+1. Explain only what the term or finding means in general, factual terms.
+2. Do not tell the patient how serious it is, whether they should worry,
+   or what will happen to them.
+3. Do not recommend any treatment or next step beyond suggesting they
+   discuss it with their doctor if they have questions.
+4. Do not diagnose anything beyond what the patient already told you.
+5. Keep it short - two to three plain sentences, no medical jargon in
+   the explanation itself.
+6. Do not use the word "assistant" or any role label in your reply.
+
+Respond only with the explanation itself - no labels, no JSON."""
+
+REASSURANCE_OVERREACH_PATTERNS = [
+    r"\bnothing to worry\b", r"\byou'?ll be fine\b", r"\bnot serious\b",
+    r"\bnot dangerous\b", r"\bcommon and harmless\b", r"\byou should be fine\b",
+    r"\bno need to worry\b", r"\bit'?s not a big deal\b",
+]
+
+
+def _looks_like_overreach(text):
+    lowered = text.lower()
+    return any(re.search(p, lowered) for p in REASSURANCE_OVERREACH_PATTERNS)
+
+
+def _generate_jargon_explanation(term):
+    fallback = (
+        f'I can give a general explanation of "{term}", but for what it means '
+        f"specifically for your situation, please check with your doctor - "
+        f"they have your full history and can explain it accurately."
+    )
+    try:
+        instruction = {
+            "role": "user",
+            "content": (
+                f'A patient asked about this term or report finding: "{term}". '
+                f"Explain what it generally means in plain language."
+            ),
+        }
+        messages = [{"role": "system", "content": JARGON_SYSTEM_PROMPT}, instruction]
+        raw_reply = _call_ollama(messages)
+        reply = _strip_role_artifacts(raw_reply)
+
+        if not reply.strip() or len(reply) > 400 or "?" in reply:
+            return fallback
+        if _looks_like_overreach(reply):
+            return fallback
+
+        return reply + " If you have any concerns about this, it's best to discuss it with your doctor."
+    except Exception as error:
+        print(f"[chatbot] Ollama unavailable for jargon explanation, using fallback: {error}", flush=True)
+        return fallback
+
 FORBIDDEN_DIAGNOSIS_TERMS = [
     "dengue", "malaria", "chikungunya", "typhoid", "cholera", "leptospirosis",
     "covid", "covid-19", "influenza", "pneumonia", "tuberculosis", "cancer",
@@ -443,6 +533,21 @@ def handle_chat_message(session_id, message):
                 "response_type": "faq",
                 "session_id": session_id,
             }
+
+    jargon_term = _extract_jargon_term(message)
+    if jargon_term:
+        reply = _generate_jargon_explanation(jargon_term)
+        session["history"].append({"role": "assistant", "content": reply})
+        return {
+            "reply": reply,
+            "is_complete": False,
+            "department": None,
+            "urgency": None,
+            "summary": None,
+            "seasonal_alert": None,
+            "response_type": "jargon_translation",
+            "session_id": session_id,
+        }
 
     session["symptom_messages"].append(message)
     session["turns"] += 1
