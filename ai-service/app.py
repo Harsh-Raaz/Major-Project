@@ -7,7 +7,12 @@ from flask_cors import CORS
 
 import dataset_loader  # noqa: F401 — load CSVs once at startup
 from busy_hours import analyze_busy_hours
-from chatbot import handle_chat_message, reset_session
+try:
+    from chatbot import handle_chat_message, reset_session
+    CHATBOT_AVAILABLE = True
+except Exception as _chatbot_import_error:
+    print(f"[app] Chatbot module unavailable: {_chatbot_import_error}")
+    CHATBOT_AVAILABLE = False
 from emergency_priority import classify_priority, prioritize_queue
 from load_balancer import balance_slots, check_doctor_load
 from recommender import recommend_doctors, recommend_hospitals
@@ -182,6 +187,9 @@ def noshow_prediction():
 
 @app.route("/chatbot/message", methods=["POST"])
 def chatbot_message():
+    if not CHATBOT_AVAILABLE:
+        return jsonify({"error": "Chatbot service is currently unavailable"}), 503
+
     try:
         data = request.get_json(silent=True) or {}
         session_id = data.get("session_id") or data.get("sessionId") or f"anon-{uuid4().hex[:8]}"
@@ -206,6 +214,9 @@ def chatbot_message():
 
 @app.route("/chatbot/reset", methods=["POST"])
 def chatbot_reset():
+    if not CHATBOT_AVAILABLE:
+        return jsonify({"status": "ok"})
+
     try:
         data = request.get_json(silent=True) or {}
         session_id = data.get("session_id") or data.get("sessionId")
