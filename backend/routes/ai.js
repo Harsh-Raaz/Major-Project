@@ -15,6 +15,46 @@ const {
 } = require('../services/aiService');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 
+async function getScoredHospitalsForDepartment(department, patientLat, patientLng) {
+  const query = { is_active: true };
+  if (department) {
+    query.departments = department;
+  }
+  const hospitals = await Hospital.find(query);
+  const today = new Date().toISOString().split('T')[0];
+  const Appointment = require('../models/Appointment');
+
+  const hospitalData = await Promise.all(
+    hospitals.map(async (h) => {
+      const slots = await Slot.find({
+        hospital_id: h._id,
+        date: today
+      });
+      const hospitalAppointments = await Appointment.find({
+        hospital_id: h._id,
+        status: { $in: ['confirmed', 'rescheduled'] }
+      }).select('estimated_wait_mins');
+      const avgWait = hospitalAppointments.length
+        ? hospitalAppointments.reduce((sum, a) => sum + (a.estimated_wait_mins || 0), 0) / hospitalAppointments.length
+        : 20;
+      return {
+        _id: h._id,
+        name: h.name,
+        lat: h.location?.lat,
+        lng: h.location?.lng,
+        address: h.location?.address,
+        rating: h.rating.overall,
+        available_slots: slots.filter((s) => s.status !== 'full').length,
+        avg_wait_time: Math.round(avgWait),
+        departments: h.departments,
+        facilities: h.facilities
+      };
+    })
+  );
+
+  return recommendHospitals(hospitalData, patientLat, patientLng);
+}
+
 router.post('/suggest-department', async (req, res) => {
   try {
     const { symptoms } = req.body;
@@ -32,47 +72,7 @@ router.post('/suggest-department', async (req, res) => {
 router.post('/recommend-hospitals', async (req, res) => {
   try {
     const { patient_lat, patient_lng, department } = req.body;
-    const query = { is_active: true };
-    if (department) {
-      query.departments = department;
-    }
-    const hospitals = await Hospital.find(query);
-    const today = new Date().toISOString().split('T')[0];
-    const Appointment = require('../models/Appointment');
-
-    const hospitalData = await Promise.all(
-      hospitals.map(async (h) => {
-        const slots = await Slot.find({
-          hospital_id: h._id,
-          date: today
-        });
-        const hospitalAppointments = await Appointment.find({
-          hospital_id: h._id,
-          status: { $in: ['confirmed', 'rescheduled'] }
-        }).select('estimated_wait_mins');
-        const avgWait = hospitalAppointments.length
-          ? hospitalAppointments.reduce((sum, a) => sum + (a.estimated_wait_mins || 0), 0) / hospitalAppointments.length
-          : 20;
-        return {
-          _id: h._id,
-          name: h.name,
-          lat: h.location?.lat,
-          lng: h.location?.lng,
-          address: h.location?.address,
-          rating: h.rating.overall,
-          available_slots: slots.filter((s) => s.status !== 'full').length,
-          avg_wait_time: Math.round(avgWait),
-          departments: h.departments,
-          facilities: h.facilities
-        };
-      })
-    );
-
-    const result = await recommendHospitals(
-      hospitalData,
-      patient_lat,
-      patient_lng
-    );
+    const result = await getScoredHospitalsForDepartment(department, patient_lat, patient_lng);
     if (result === null) {
       return res.status(500).json({ message: 'AI service unavailable' });
     }
@@ -169,7 +169,7 @@ router.post('/predict-noshow', async (req, res) => {
 
 router.post('/chatbot/message', async (req, res) => {
   try {
-    const { session_id, message } = req.body || {};
+    const { session_id, message, patient_lat, patient_lng } = req.body || {};
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({
@@ -190,6 +190,32 @@ router.post('/chatbot/message', async (req, res) => {
         seasonal_alert: null,
         session_id: result.session_id || session_id || null
       });
+    }
+
+    const shouldShowHospitals =
+      result.department && result.department !== 'Emergency' && result.is_complete;
+
+    if (shouldShowHospitals) {
+      try {
+        const lat = patient_lat || 12.9716;
+        const lng = patient_lng || 77.5946;
+        const scoredHospitals = await getScoredHospitalsForDepartment(result.department, lat, lng);
+        if (Array.isArray(scoredHospitals)) {
+          result.hospital_preview = scoredHospitals.slice(0, 3).map((h) => ({
+            _id: h._id,
+            name: h.name,
+            address: h.address,
+            rating: h.rating,
+            distance_km: h.distance_km,
+            available_slots: h.available_slots,
+            score: h.score
+          }));
+        }
+      } catch (previewError) {
+        console.error('Hospital preview enrichment failed:', previewError.message);
+        // Chatbot response still succeeds without a preview - this is
+        // a nice-to-have addition, not a required part of the response.
+      }
     }
 
     res.json(result);
