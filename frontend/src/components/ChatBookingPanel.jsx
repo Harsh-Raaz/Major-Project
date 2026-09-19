@@ -29,9 +29,42 @@ export default function ChatBookingPanel({
 
   const options = Array.isArray(booking.options) ? booking.options : [];
   const prompt = promptFromReply(booking.reply);
+  const STAGE_STEP = {
+    choose_hospital: 1,
+    choose_doctor: 2,
+    choose_slot: 3,
+    confirm: 4,
+    booked: 4,
+  };
+  const currentStep = STAGE_STEP[booking.stage] ?? null;
+  const STEP_LABELS = ['Hospital', 'Doctor', 'Time', 'Confirm'];
 
   return (
     <div className="cc-chat-enter">
+      {currentStep !== null && (
+        <div className="mb-4 flex items-center gap-2">
+          {STEP_LABELS.map((label, i) => {
+            const step = i + 1;
+            const done = step < currentStep;
+            const active = step === currentStep;
+            return (
+              <div key={step} className="flex items-center gap-2">
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold
+                  ${done ? 'bg-[#00B8A9] text-white' : active ? 'bg-[#0A1628] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  {done ? '✓' : step}
+                </div>
+                <span className={`text-xs font-medium hidden sm:inline
+                  ${active ? 'text-[#0A1628]' : 'text-slate-400'}`}>
+                  {label}
+                </span>
+                {i < STEP_LABELS.length - 1 && (
+                  <div className={`h-px w-4 ${done ? 'bg-[#00B8A9]' : 'bg-slate-200'}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {prompt && ["choose_hospital", "choose_doctor", "choose_slot"].includes(booking.stage) && (
         <p className="mb-3 text-sm leading-6 text-[#0A1628]">{prompt}</p>
       )}
@@ -132,6 +165,16 @@ export default function ChatBookingPanel({
             <RotateCcw size={16} /> Start over
           </button>
         </StatusCard>
+      )}
+      {['choose_hospital', 'choose_doctor', 'choose_slot'].includes(booking.stage) && (
+        <button
+          type="button"
+          onClick={onStartOver}
+          disabled={isSending}
+          className="mt-4 block w-full text-center text-xs text-slate-400 transition hover:text-slate-600 disabled:opacity-50"
+        >
+          Cancel booking
+        </button>
       )}
     </div>
   );

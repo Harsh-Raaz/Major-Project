@@ -483,7 +483,7 @@ router.post('/chatbot/booking-message', async (req, res) => {
 
       _resetBookingSession(session_id);
       return res.json({
-        reply: `Your appointment is confirmed with Dr. ${booking.selected_doctor?.name || ''} at ${booking.selected_hospital?.name || ''}. Estimated wait time: ${result.estimated_wait_mins} minutes.`,
+        reply: `Your appointment is confirmed with ${booking.selected_doctor?.name || ''} at ${booking.selected_hospital?.name || ''}. Estimated wait time: ${result.estimated_wait_mins} minutes.`,
         stage: 'booked',
         appointment: result.appointment,
         session_id
