@@ -9,7 +9,9 @@ const {
   recommendHospitals,
   recommendDoctors,
   getSeasonalAlert,
-  predictNoShow
+  predictNoShow,
+  sendChatbotMessage,
+  resetChatbotSession
 } = require('../services/aiService');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 
@@ -164,4 +166,66 @@ router.post('/predict-noshow', async (req, res) => {
     });
   }
 });
+
+router.post('/chatbot/message', async (req, res) => {
+  try {
+    const { session_id, message } = req.body || {};
+
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({
+        message: 'Message is required.'
+      });
+    }
+
+    const result = await sendChatbotMessage(session_id || null, message.trim());
+
+    if (result?.unavailable) {
+      return res.status(503).json({
+        message: 'AI service unavailable',
+        reply: result.reply,
+        is_complete: false,
+        department: null,
+        urgency: null,
+        summary: null,
+        seasonal_alert: null,
+        session_id: result.session_id || session_id || null
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+router.post('/chatbot/reset', async (req, res) => {
+  try {
+    const { session_id } = req.body || {};
+
+    if (!session_id || typeof session_id !== 'string' || !session_id.trim()) {
+      return res.status(400).json({
+        message: 'session_id is required.'
+      });
+    }
+
+    const result = await resetChatbotSession(session_id.trim());
+
+    if (result?.unavailable) {
+      return res.status(200).json({
+        status: 'reset',
+        session_id: result.session_id || session_id,
+        message: 'AI service unavailable; reset was accepted by Node.'
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
 module.exports = router;
