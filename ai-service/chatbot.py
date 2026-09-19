@@ -54,6 +54,140 @@ FALLBACK_QUESTIONS = {
     "functional_impact": "Are you able to eat and drink normally and perform your usual activities?",
 }
 
+FAQ_KNOWLEDGE_BASE = [
+    {
+        "id": "wait_time",
+        "keywords": ["wait time", "waiting time", "how long wait", "queue time", "how is wait"],
+        "answer": (
+            "Wait time is calculated from real appointment data: the number of "
+            "patients ahead of you, multiplied by the doctor's average "
+            "consultation time plus a small buffer per patient. It updates "
+            "automatically if someone ahead of you cancels."
+        ),
+    },
+    {
+        "id": "priority_levels",
+        "keywords": ["urgent", "emergency", "priority level", "difference between urgent", "what does urgent mean", "what does emergency mean"],
+        "answer": (
+            "CrowdCare uses three priority levels. Emergency means symptoms like "
+            "chest pain or difficulty breathing - seek immediate care. Urgent "
+            "means you should be seen soon, such as a high fever in a child. "
+            "Normal is standard priority for routine or mild symptoms."
+        ),
+    },
+    {
+        "id": "noshow_risk",
+        "keywords": ["no-show", "no show", "risk score", "miss my appointment", "reminder risk"],
+        "answer": (
+            "The no-show risk score predicts how likely a patient is to miss "
+            "an appointment, shown as low, medium, or high risk, using a "
+            "machine learning model trained on real appointment patterns. "
+            "High-risk appointments get a recommendation to send an extra "
+            "reminder."
+        ),
+    },
+    {
+        "id": "seasonal_alert",
+        "keywords": ["seasonal alert", "dengue warning", "monsoon illness", "why did i get a warning", "disease alert"],
+        "answer": (
+            "Seasonal alerts have three tiers - Watch, Elevated, and High risk - "
+            "based on how many of your symptoms overlap with common illnesses "
+            "for the current season, using real historical disease data, not "
+            "just the calendar month."
+        ),
+    },
+    {
+        "id": "hospital_score",
+        "keywords": ["hospital score", "why this hospital", "how are hospitals ranked", "hospital recommendation"],
+        "answer": (
+            "Hospitals are scored using four weighted factors: wait time (35%), "
+            "distance (25%), rating (20%), and available slots (20%). You can "
+            "tap 'Why this score?' on any hospital to see the exact breakdown."
+        ),
+    },
+    {
+        "id": "doctor_score",
+        "keywords": ["doctor score", "why this doctor", "how are doctors ranked", "doctor recommendation"],
+        "answer": (
+            "Doctors are scored using rating (30%), experience (25%), available "
+            "slots (25%), and current patient load (20%, subtracted as a "
+            "penalty) - so an overloaded doctor won't outrank a less busy one "
+            "with a similar rating."
+        ),
+    },
+    {
+        "id": "cancel_reschedule",
+        "keywords": ["cancel appointment", "reschedule", "change my appointment", "how to cancel"],
+        "answer": (
+            "You can cancel or reschedule from your appointments dashboard. "
+            "When you cancel, the slot is freed and the first person on the "
+            "waitlist for it is automatically notified and promoted."
+        ),
+    },
+    {
+        "id": "waitlist",
+        "keywords": ["waitlist", "full slot", "slot is full", "join waitlist"],
+        "answer": (
+            "If a slot is full, you can join its waitlist. You'll be notified "
+            "automatically if a spot opens up - no need to keep checking "
+            "manually."
+        ),
+    },
+    {
+        "id": "privacy",
+        "keywords": ["privacy", "data safe", "where does my data go", "is this private", "third party"],
+        "answer": (
+            "Symptom conversations are processed by a language model running "
+            "locally on our own server via Ollama - nothing you type here is "
+            "sent to an external AI provider."
+        ),
+    },
+]
+
+FAQ_TRIGGER_PATTERNS = [
+    r"\bhow (does|is|do)\b", r"\bwhat (does|is|are)\b", r"\bwhy (did|is|does)\b",
+    r"\bexplain\b", r"\bcan you tell me about\b", r"\bhow can i\b",
+]
+
+
+def _looks_like_faq(text):
+    lowered = text.lower()
+    return any(re.search(p, lowered) for p in FAQ_TRIGGER_PATTERNS)
+
+
+def _find_best_faq_match(text):
+    lowered = text.lower()
+    best_entry = None
+    best_score = 0
+    for entry in FAQ_KNOWLEDGE_BASE:
+        score = sum(1 for kw in entry["keywords"] if kw in lowered)
+        if score > best_score:
+            best_score = score
+            best_entry = entry
+    return best_entry if best_score > 0 else None
+
+
+def _generate_faq_answer(entry, user_message):
+    fact = entry["answer"]
+    try:
+        instruction = {
+            "role": "user",
+            "content": (
+                f'A patient asked: "{user_message}". Using only this fact, '
+                f"answer them naturally in one or two short sentences, without "
+                f"adding any information beyond it: {fact}"
+            ),
+        }
+        messages = [{"role": "system", "content": CLOSING_SYSTEM_PROMPT}, instruction]
+        raw_reply = _call_ollama(messages)
+        reply = _sanitize_reply(raw_reply)
+        if "?" in reply or len(reply) > 300 or not reply.strip():
+            return fact
+        return reply
+    except Exception as error:
+        print(f"[chatbot] Ollama unavailable for FAQ answer, using fact directly: {error}", flush=True)
+        return fact
+
 FORBIDDEN_DIAGNOSIS_TERMS = [
     "dengue", "malaria", "chikungunya", "typhoid", "cholera", "leptospirosis",
     "covid", "covid-19", "influenza", "pneumonia", "tuberculosis", "cancer",
@@ -174,14 +308,17 @@ def _generate_closing_reply(department, fallback_reply):
         raw_reply = _call_ollama(messages)
         reply = _sanitize_reply(raw_reply)
 
-        if _looks_unsafe_as_closing_reply(reply):
+        if _looks_unsafe_as_closing_reply(reply,department):
             print(f"[chatbot] Closing reply failed safety check, using template. Raw model output was: {raw_reply!r}", flush=True)
             return fallback_reply
 
         print(f"[chatbot] Closing reply generated by Ollama: {reply!r}", flush=True)
         return reply
-    except Exception as error:
+    except RuntimeError as error:
         print(f"[chatbot] Ollama unavailable for closing reply, using template: {error}", flush=True)
+        return fallback_reply
+    except Exception as error:
+        print(f"[chatbot] UNEXPECTED ERROR in closing reply generation (this is a code bug, not Ollama): {type(error).__name__}: {error}", flush=True)
         return fallback_reply
 
 
@@ -192,6 +329,7 @@ def _get_session(session_id):
             "turns": 0,
             "signals": {sig: False for sig in SIGNAL_ORDER},
             "last_asked": None,
+            "symptom_messages": [],
         }
     return _conversations[session_id]
 
@@ -200,8 +338,8 @@ def reset_session(session_id):
     _conversations.pop(session_id, None)
 
 
-def _combined_patient_text(history):
-    return " ".join(m["content"] for m in history if m["role"] == "user")
+def _combined_patient_text(symptom_messages):
+    return " ".join(symptom_messages)
 
 
 def _is_skip_response(text):
@@ -270,12 +408,7 @@ def _ask_for_signal(session, signal):
 def handle_chat_message(session_id, message):
     session = _get_session(session_id)
     session["history"].append({"role": "user", "content": message})
-    session["turns"] += 1
-
-    combined_text = _combined_patient_text(session["history"])
-    month = datetime.now().month
-
-    priority, _level = classify_priority(combined_text)
+    priority, _level = classify_priority(message)
 
     if priority == "emergency":
         reply = (
@@ -289,8 +422,50 @@ def handle_chat_message(session_id, message):
             "is_complete": True,
             "department": "Emergency",
             "urgency": "emergency",
+            "summary": _combined_patient_text(session["symptom_messages"]),
+            "seasonal_alert": None,
+            "response_type": "emergency",
+            "session_id": session_id,
+        }
+
+    if _looks_like_faq(message):
+        faq_entry = _find_best_faq_match(message)
+        if faq_entry is not None:
+            reply = _generate_faq_answer(faq_entry, message)
+            session["history"].append({"role": "assistant", "content": reply})
+            return {
+                "reply": reply,
+                "is_complete": False,
+                "department": None,
+                "urgency": None,
+                "summary": None,
+                "seasonal_alert": None,
+                "response_type": "faq",
+                "session_id": session_id,
+            }
+
+    session["symptom_messages"].append(message)
+    session["turns"] += 1
+
+    combined_text = _combined_patient_text(session["symptom_messages"])
+    month = datetime.now().month
+
+    combined_priority, _combined_level = classify_priority(combined_text)
+    if combined_priority == "emergency":
+        reply = (
+            "This may be a medical emergency. Please go to the nearest "
+            "Emergency department right now or call for emergency help - "
+            "don't wait for further questions."
+        )
+        session["history"].append({"role": "assistant", "content": reply})
+        return {
+            "reply": reply,
+            "is_complete": True,
+            "department": "Emergency",
+            "urgency": "emergency",
             "summary": combined_text,
             "seasonal_alert": None,
+            "response_type": "emergency",
             "session_id": session_id,
         }
 
@@ -309,13 +484,14 @@ def handle_chat_message(session_id, message):
             "urgency": None,
             "summary": None,
             "seasonal_alert": None,
+            "response_type": "triage_question",
             "session_id": session_id,
         }
 
     result = suggest_department(combined_text, month)
     department = result.get("department", "General Medicine")
     seasonal_alert = result.get("seasonal_alert")
-    urgency = priority
+    urgency = combined_priority
 
     closing_reply = f"Based on what you've shared, {department} would be the right department for this."
     if urgency == "urgent":
@@ -333,5 +509,6 @@ def handle_chat_message(session_id, message):
         "summary": combined_text,
         "signals_collected": session["signals"],
         "seasonal_alert": seasonal_alert,
+        "response_type": "triage_complete",
         "session_id": session_id,
     }
