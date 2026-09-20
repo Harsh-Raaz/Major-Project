@@ -1,14 +1,22 @@
 from datetime import datetime
+from uuid import uuid4
 
+from ml.predict import predict_noshow
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import dataset_loader  # noqa: F401 — load CSVs once at startup
 from busy_hours import analyze_busy_hours
+try:
+    from chatbot import handle_chat_message, reset_session
+    CHATBOT_AVAILABLE = True
+except Exception as _chatbot_import_error:
+    print(f"[app] Chatbot module unavailable: {_chatbot_import_error}")
+    CHATBOT_AVAILABLE = False
 from emergency_priority import classify_priority, prioritize_queue
 from load_balancer import balance_slots, check_doctor_load
 from recommender import recommend_doctors, recommend_hospitals
-from seasonal import get_seasonal_alert
+from seasonal import get_seasonal_alert, get_full_seasonal_calendar
 from symptom_classifier import suggest_department
 from wait_time import estimate_wait
 
@@ -75,6 +83,14 @@ def seasonal_alert():
 
         result = get_seasonal_alert(month, symptoms)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/seasonal-calendar", methods=["GET"])
+def seasonal_calendar():
+    try:
+        return jsonify(get_full_seasonal_calendar())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -156,6 +172,60 @@ def busy_hours_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/predict-noshow", methods=["POST"])
+def noshow_prediction():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        result = predict_noshow(data)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/chatbot/message", methods=["POST"])
+def chatbot_message():
+    if not CHATBOT_AVAILABLE:
+        return jsonify({"error": "Chatbot service is currently unavailable"}), 503
+
+    try:
+        data = request.get_json(silent=True) or {}
+        session_id = data.get("session_id") or data.get("sessionId") or f"anon-{uuid4().hex[:8]}"
+        message = data.get("message", "")
+
+        if not message or not str(message).strip():
+            return jsonify({
+                "reply": "Please tell me a little more about your symptoms so I can help.",
+                "is_complete": False,
+                "department": None,
+                "urgency": None,
+                "summary": None,
+                "seasonal_alert": None,
+                "session_id": session_id,
+            }), 400
+
+        result = handle_chat_message(session_id, str(message).strip())
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/chatbot/reset", methods=["POST"])
+def chatbot_reset():
+    if not CHATBOT_AVAILABLE:
+        return jsonify({"status": "ok"})
+
+    try:
+        data = request.get_json(silent=True) or {}
+        session_id = data.get("session_id") or data.get("sessionId")
+        if session_id:
+            reset_session(session_id)
+        return jsonify({"status": "reset", "session_id": session_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    app.run(port=5001, debug=True, threaded=True)

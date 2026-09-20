@@ -37,6 +37,7 @@ router.get('/dashboard', async (req, res) => {
       const max = doc.max_patients_per_day || 1;
       const current = doc.current_patients_today || 0;
       return {
+        id: doc._id,
         name: doc.name,
         department: doc.department,
         load_index: Math.round((current / max) * 100),
@@ -91,10 +92,38 @@ router.get('/trends', async (req, res) => {
       { $sort: { _id: 1 } }
     ]);
 
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday'
+    ];
+
+    const hourly_bookings = hourlyTrend.map((item) => ({
+      hour: item._id,
+      count: item.count
+    }));
+
+    const department_wise_bookings = departmentTrend.map((item) => ({
+      department: item._id || 'General',
+      count: item.count
+    }));
+
+    const day_wise_bookings = dailyTrend.map((item) => ({
+      day: dayNames[(item._id || 1) - 1],
+      count: item.count
+    }));
+
     res.json({
-      hourly: hourlyTrend,
-      departments: departmentTrend,
-      daily: dailyTrend
+      hourly_bookings,
+      department_wise_bookings,
+      day_wise_bookings,
+      hourly: hourly_bookings,
+      departments: department_wise_bookings,
+      daily: day_wise_bookings
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

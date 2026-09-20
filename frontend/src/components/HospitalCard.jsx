@@ -1,0 +1,142 @@
+import { useState } from "react";
+import { MapPin, ArrowRightLeft, Route } from "lucide-react";
+import { scoreClass } from "../utils/helpers";
+
+export default function HospitalCard({
+  hospital,
+  recommended,
+  checked,
+  onToggleCompare,
+  onViewDoctors,
+  onRoute,
+}) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const id = hospital.id || hospital._id;
+  const address =
+    hospital.address ||
+    [hospital.location?.address, hospital.location?.city].filter(Boolean).join(", ");
+  return (
+    <article className="cc-surface relative overflow-hidden p-5 animate-fade-up">
+      <div className="absolute inset-y-0 left-0 w-1 bg-[#00B8A9]" />
+      <div className="flex flex-wrap items-start justify-between gap-4 pl-3">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-2xl font-semibold text-[#0A1628]">
+              {hospital.name}
+            </h3>
+            {recommended && (
+              <span className="animate-pulse-slow rounded-full bg-[#00B8A9] px-3 py-1 text-xs font-semibold text-white">
+                Recommended
+              </span>
+            )}
+          </div>
+          <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+            <MapPin size={15} className="text-[#00B8A9]" />
+            {address || "Address unavailable"}
+          </p>
+        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreClass(
+            Number(hospital.score || 0)
+          )}`}
+        >
+          Score {Math.round(Number(hospital.score || 0) * 100)}%
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3 pl-3 text-sm text-slate-700 md:grid-cols-4">
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Rating</p>
+          <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-[#0A1628]">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <svg
+                key={star}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                fill={star <= Math.round(Number(hospital.rating?.overall ?? hospital.rating ?? 0))
+                  ? '#F59E0B'
+                  : 'none'}
+                stroke="#F59E0B"
+                strokeWidth="1.5"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                  12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+            <span className="ml-1 text-slate-500">
+              ({hospital.rating?.overall ?? hospital.rating ?? '—'})
+            </span>
+          </p>
+        </div>
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Distance</p>
+          <p className="mt-2 font-semibold text-[#0A1628]">
+            {hospital.distance_km ?? hospital.distance ?? 0} km
+          </p>
+        </div>
+        <div className="rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Slots today</p>
+          <p className="mt-2 font-semibold text-[#0A1628]">
+            {hospital.available_slots_today ?? hospital.available_slots ?? 0}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-start gap-2 rounded-[18px] border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] p-3">
+          {(hospital.facilities || []).slice(0, 4).map((facility) => (
+            <span
+              key={facility}
+              className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700"
+            >
+              {facility}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {hospital.score_breakdown && (
+        <div className="mt-4 pl-3">
+          <button
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="text-xs font-medium text-[#00B8A9] underline"
+          >
+            {showBreakdown ? "Hide" : "Why this score?"}
+          </button>
+          {showBreakdown && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              {Object.entries(hospital.score_breakdown).map(([label, value]) => (
+                <div key={label} className="rounded-[14px] border border-[rgba(0,184,169,0.15)] bg-white p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">{label.replace("_", " ")}</p>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+                    <div
+                      className="h-1.5 rounded-full bg-[#00B8A9]"
+                      style={{ width: `${value}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs font-semibold text-[#0A1628]">{value}%</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-3 pl-3">
+        <label className="inline-flex items-center gap-2 rounded-full border border-[rgba(0,184,169,0.15)] bg-[#F8FFFD] px-4 py-2 text-sm text-slate-700">
+          <input checked={checked} onChange={() => onToggleCompare(id)} type="checkbox" />
+          Compare
+        </label>
+        <button onClick={onViewDoctors} className="cc-btn-primary">
+          View Doctors
+        </button>
+        <button onClick={onRoute} className="cc-btn-secondary">
+          <Route size={16} />
+          Route
+        </button>
+        <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+          <ArrowRightLeft size={15} />
+          Smart comparison enabled
+        </span>
+      </div>
+    </article>
+  );
+}
