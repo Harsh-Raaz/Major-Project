@@ -4,8 +4,9 @@ const axios = require('axios');
 const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
-const { createAppointment } = require('./appointments');
+const { createAppointment, emitSlotUpdate, updatePatientQueue } = require('./appointments');
 const Patient = require('../models/Patient');
+const { getLocalDateString } = require('../utils/date');
 const {
   suggestDepartment,
   recommendHospitals,
@@ -23,7 +24,7 @@ async function getScoredHospitalsForDepartment(department, patientLat, patientLn
     query.departments = department;
   }
   const hospitals = await Hospital.find(query);
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const Appointment = require('../models/Appointment');
 
   const hospitalData = await Promise.all(
@@ -397,16 +398,18 @@ router.post('/chatbot/booking-message', async (req, res) => {
       booking.selected_doctor = chosen;
 
       const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const today = getLocalDateString(now);
       const currentTime = now.toTimeString().slice(0, 5);
       const slots = await Slot.find({
         doctor_id: chosen._id,
-        date: { $gte: today },
+        $or: [
+          { date: { $gt: today } },
+          { date: today, start_time: { $gt: currentTime } }
+        ],
         status: { $ne: 'full' }
-      }).sort({ date: 1, start_time: 1 });
-      const upcomingSlots = slots.filter((slot) => slot.date > today || slot.start_time > currentTime);
+      }).sort({ date: 1, start_time: 1 }).limit(6);
 
-      if (!upcomingSlots.length) {
+      if (!slots.length) {
         _resetBookingSession(session_id);
         return res.json({
           reply: `No upcoming slots for ${chosen.name}. Please try a different doctor by starting again.`,
@@ -416,7 +419,7 @@ router.post('/chatbot/booking-message', async (req, res) => {
       }
 
       booking.stage = 'choose_slot';
-      booking.slots = upcomingSlots.slice(0, 6);
+      booking.slots = slots;
       return res.json({
         reply: `You chose ${chosen.name}. Here are upcoming slots:\n\n${_formatSlotList(booking.slots)}`,
         stage: booking.stage,
@@ -480,6 +483,9 @@ router.post('/chatbot/booking-message', async (req, res) => {
           session_id
         });
       }
+
+      await emitSlotUpdate(req.app.get('io'), result.appointment.slot_id);
+      updatePatientQueue(req.app.get('io'), result.appointment, 'booking');
 
       _resetBookingSession(session_id);
       return res.json({

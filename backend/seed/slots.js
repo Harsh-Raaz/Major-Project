@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 const mongoose = require('mongoose');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
+const { getLocalDateString } = require('../utils/date');
 
 const timeSlots = [
   { start: '09:00', end: '10:00' },
@@ -17,16 +18,12 @@ const timeSlots = [
   { start: '19:00', end: '20:00' }
 ];
 
-function formatDate(date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function buildUpcomingDates(daysAhead = 7) {
   const dates = [];
   for (let i = 0; i <= daysAhead; i += 1) {
     const date = new Date();
     date.setDate(date.getDate() + i);
-    dates.push(formatDate(date));
+    dates.push(getLocalDateString(date));
   }
   return dates;
 }

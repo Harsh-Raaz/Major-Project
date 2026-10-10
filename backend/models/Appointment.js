@@ -35,6 +35,7 @@ const appointmentSchema = new mongoose.Schema(
     },
     symptoms: { type: String },
     estimated_wait_mins: { type: Number },
+    queue_position: { type: Number, default: null },
     booking_time: { type: Date, default: Date.now },
     notes: { type: String }
   },

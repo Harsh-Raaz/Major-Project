@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Appointment = require('../models/Appointment');
+const Notification = require('../models/Notification');
 
 router.get('/patient/:patient_id', async (req, res) => {
   try {
@@ -12,7 +13,8 @@ router.get('/patient/:patient_id', async (req, res) => {
       .populate('slot_id', 'date start_time end_time')
       .populate('hospital_id', 'name location');
 
-    const notifications = [];
+    const notifications = await Notification.find({ patient_id: req.params.patient_id })
+      .sort({ createdAt: -1 }).limit(50).lean();
     const now = new Date();
 
     for (const appt of appointments) {

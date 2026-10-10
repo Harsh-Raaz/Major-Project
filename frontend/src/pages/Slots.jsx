@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import AppLayout from "../layouts/AppLayout";
@@ -6,6 +6,7 @@ import Loader from "../components/Loader";
 import SlotCard from "../components/SlotCard";
 import { getSlots } from "../api/doctor";
 import { loadBalanceSlot } from "../api/ai";
+import { useSlotSocket } from "../hooks/useSlotSocket";
 
 const normalizeSlotsResponse = (data) => {
   if (Array.isArray(data)) return data;
@@ -52,6 +53,22 @@ export default function Slots() {
   const [selected, setSelected] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedDate, setSelectedDate] = useState(getDateOptions()[0]);
+
+  const handleSlotUpdate = useCallback((data) => {
+    const updateSlot = (slot) => {
+      if (!slot || String(slot._id || slot.id) !== data.slot_id) return slot;
+      return {
+        ...slot,
+        current_bookings: data.current_bookings,
+        capacity: data.capacity,
+        status: data.status,
+      };
+    };
+    setSlots((prev) => prev.map(updateSlot));
+    setSelected(updateSlot);
+  }, []);
+
+  useSlotSocket(hospitalId || slots[0]?.hospital_id, selectedDate, handleSlotUpdate);
 
   useEffect(() => {
     const load = async () => {
@@ -102,7 +119,12 @@ export default function Slots() {
   return (
     <AppLayout>
       <section className="animate-fade-up">
-        <p className="cc-eyebrow">Slot Selection</p>
+        <p className="cc-eyebrow">
+          Slot Selection
+          <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+            ● LIVE
+          </span>
+        </p>
         <h2 className="mt-3 font-display text-3xl font-semibold text-[#0A1628]">
           {doctorName}
         </h2>

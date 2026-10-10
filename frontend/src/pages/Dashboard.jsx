@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import AppLayout from '../layouts/AppLayout';
 import Loader from '../components/Loader';
@@ -17,6 +17,7 @@ import {
   getPatientNotifications,
 } from '../api/patient';
 import { getPatient } from '../utils/storage';
+import { usePatientSocket } from '../hooks/usePatientSocket';
 
 const slotTimeText = (slot) =>
   slot.time_range || `${slot.start_time} - ${slot.end_time}`;
@@ -25,46 +26,62 @@ export default function Dashboard() {
   const { user } = useAuth();
   const patient = getPatient();
   const patientId = patient?._id || patient?.id;
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(patientId));
   const [appointments, setAppointments] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [tab, setTab] = useState('upcoming');
   const [modal, setModal] = useState(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!patientId) {
-        setLoading(false);
-        return;
-      }
+  const loadData = useCallback(() => {
+    if (!patientId) return Promise.resolve();
 
-      setLoading(true);
+    const fetchData = async () => {
       try {
-        try {
-          await autocompleteAppointments();
-        } catch {
-          // Non-blocking: dashboard should still load if the check fails.
-        }
-
-        const [appointmentsRes, notificationsRes] = await Promise.all([
-          getPatientAppointments(patientId),
-          getPatientNotifications(patientId),
-        ]);
-        setAppointments(
-          appointmentsRes.data?.appointments || appointmentsRes.data || []
-        );
-        setNotifications(
-          notificationsRes.data?.notifications || notificationsRes.data || []
-        );
+        await autocompleteAppointments();
       } catch {
-        toast.error('Failed loading dashboard');
-      } finally {
-        setLoading(false);
+        // Non-blocking: dashboard should still load if the check fails.
       }
+
+      return Promise.all([
+        getPatientAppointments(patientId),
+        getPatientNotifications(patientId),
+      ]);
     };
 
-    loadData();
+    return fetchData().then(([appointmentsRes, notificationsRes]) => {
+      setAppointments(
+        appointmentsRes.data?.appointments || appointmentsRes.data || []
+      );
+      setNotifications(
+        notificationsRes.data?.notifications || notificationsRes.data || []
+      );
+    }).catch(() => {
+      toast.error('Failed loading dashboard');
+    }).finally(() => {
+      setLoading(false);
+    });
   }, [patientId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleAppointmentUpdate = useCallback((data) => {
+    setAppointments((prev) => prev.map((appointment) =>
+      String(appointment._id || appointment.id) === data.appointment_id
+        ? { ...appointment, queue_position: data.queue_position,
+            estimated_wait_mins: data.estimated_wait_mins, status: data.status }
+        : appointment
+    ));
+    if (data.message) {
+      setNotifications((prev) => [
+        { message: data.message, type: 'queue_update', priority: 'medium' }, ...prev
+      ]);
+      toast.success(data.message, { duration: 5000 });
+    }
+  }, []);
+
+  usePatientSocket(patientId, handleAppointmentUpdate, loadData);
 
   const onCancel = async (id) => {
     try {
@@ -208,6 +225,19 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-600">
                     {appointment.date} {appointment.time}
                   </p>
+                  {!['completed', 'cancelled'].includes(
+                    String(appointment.status || '').toLowerCase()
+                  ) && (
+                    <p className="text-sm text-slate-600">
+                      {[
+                        appointment.queue_position != null ? `Queue position #${appointment.queue_position}` : null,
+                        appointment.estimated_wait_mins != null ? `Est. wait ${appointment.estimated_wait_mins} min` : null,
+                      ].filter(Boolean).join(' · ')}
+                      <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                        ● LIVE
+                      </span>
+                    </p>
+                  )}
                   <p className="mt-3 text-sm">
                     Status:{' '}
                     <span className="font-semibold capitalize text-[#0A1628]">

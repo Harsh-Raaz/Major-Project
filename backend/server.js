@@ -1,10 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const Doctor = require('./models/Doctor');
 const Slot = require('./models/Slot');
 const appointmentsRouter = require('./routes/appointments');
 const reviewsRouter = require('./routes/reviews');
+const { getLocalDateString } = require('./utils/date');
 require('dotenv').config();
 
 let cron = null;
@@ -36,16 +39,12 @@ const timeSlots = [
   { start: '19:00', end: '20:00' }
 ];
 
-function formatDate(date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function buildUpcomingDates(daysAhead = 7) {
   const dates = [];
   for (let i = 0; i <= daysAhead; i += 1) {
     const date = new Date();
     date.setDate(date.getDate() + i);
-    dates.push(formatDate(date));
+    dates.push(getLocalDateString(date));
   }
   return dates;
 }
@@ -135,11 +134,39 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/reviews', reviewsRouter);
 
-const server = app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST']
+  }
+});
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  socket.on('join_slot_room', ({ hospital_id, date } = {}) => {
+    if (hospital_id && date) socket.join(`slots:${hospital_id}:${date}`);
+  });
+  socket.on('leave_slot_room', ({ hospital_id, date } = {}) => {
+    if (hospital_id && date) socket.leave(`slots:${hospital_id}:${date}`);
+  });
+  socket.on('join_patient_room', ({ patient_id } = {}) => {
+    if (patient_id) socket.join(`patient:${patient_id}`);
+  });
+  socket.on('leave_patient_room', ({ patient_id } = {}) => {
+    if (patient_id) socket.leave(`patient:${patient_id}`);
+  });
+  socket.on('disconnect', () => {
+    console.log(`Socket disconnected: ${socket.id}`);
+  });
+});
+
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-server.on('error', (error) => {
+httpServer.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
     console.error(
       `Port ${PORT} is already in use. Stop the existing process on port ${PORT} or set a different PORT before starting the backend.`

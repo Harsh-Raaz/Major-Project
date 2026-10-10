@@ -4,6 +4,16 @@ const Appointment = require('../models/Appointment');
 const Slot = require('../models/Slot');
 const Doctor = require('../models/Doctor');
 const Waitlist = require('../models/Waitlist');
+const { getLocalDateString } = require('../utils/date');
+const { recalculateSlotQueue } = require('../services/queueService');
+
+function updatePatientQueue(io, appointment, reason, slotIds = [appointment.slot_id]) {
+  Promise.all([...new Set(slotIds.map(String))].map((slotId) =>
+    recalculateSlotQueue(slotId, io, { reason, excludePatientId: appointment.patient_id })
+  )).then(() => {
+    if (io) io.to(`patient:${appointment.patient_id}`).emit('appointments_changed', {});
+  }).catch((error) => console.error('Patient queue update failed:', error));
+}
 
 function calculateWaitTime(patientsAhead, avgConsultMins) {
   const buffer = 3;
@@ -27,9 +37,29 @@ function normalizePriority(priority) {
   return ['normal', 'urgent', 'emergency'].includes(value) ? value : 'normal';
 }
 
+async function emitSlotUpdate(io, slotId) {
+  if (!io || !slotId) return;
+
+  try {
+    const slot = await Slot.findById(slotId).select(
+      'hospital_id date capacity current_bookings status'
+    );
+    if (slot) {
+      io.to(`slots:${slot.hospital_id}:${slot.date}`).emit('slot_updated', {
+        slot_id: String(slot._id),
+        current_bookings: slot.current_bookings,
+        capacity: slot.capacity,
+        status: slot.status
+      });
+    }
+  } catch (err) {
+    console.error('Failed to broadcast slot update:', err.message);
+  }
+}
+
 async function autoCompleteExpiredAppointments() {
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = getLocalDateString(now);
   const currentTime = now.toTimeString().slice(0, 5);
 
   const expiredSlots = await Slot.find({
@@ -134,6 +164,9 @@ router.post('/', async (req, res) => {
     if (result.error === 'slot_full') {
       return res.status(400).json({ message: result.message, suggestion: result.suggestion });
     }
+
+    await emitSlotUpdate(req.app.get('io'), result.appointment.slot_id);
+    updatePatientQueue(req.app.get('io'), result.appointment, 'booking');
 
     res.status(201).json({
       appointment: result.appointment,
@@ -257,6 +290,9 @@ router.put('/:id/cancel', async (req, res) => {
       await nextWaitlisted.save();
     }
 
+    await emitSlotUpdate(req.app.get('io'), appointment.slot_id);
+    updatePatientQueue(req.app.get('io'), appointment, 'cancellation');
+
     res.json({
       message: 'Appointment cancelled successfully',
       promoted_waitlist: nextWaitlisted || null
@@ -301,6 +337,12 @@ router.put('/:id/reschedule', async (req, res) => {
     appointment.status = 'rescheduled';
     appointment.estimated_wait_mins = estimatedWait;
     await appointment.save();
+
+    await emitSlotUpdate(req.app.get('io'), oldSlot?._id);
+    await emitSlotUpdate(req.app.get('io'), appointment.slot_id);
+    updatePatientQueue(req.app.get('io'), appointment, 'reschedule', [
+      ...(oldSlot ? [oldSlot._id] : []), appointment.slot_id
+    ]);
 
     res.json({
       appointment,
@@ -357,3 +399,5 @@ router.get('/:id/followup', async (req, res) => {
 module.exports = router;
 module.exports.autoCompleteExpiredAppointments = autoCompleteExpiredAppointments;
 module.exports.createAppointment = createAppointment;
+module.exports.emitSlotUpdate = emitSlotUpdate;
+module.exports.updatePatientQueue = updatePatientQueue;

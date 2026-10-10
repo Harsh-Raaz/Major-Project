@@ -4,6 +4,7 @@ const Hospital = require('./models/Hospital');
 const Doctor = require('./models/Doctor');
 const Slot = require('./models/Slot');
 const Patient = require('./models/Patient');
+const { getLocalDateString } = require('./utils/date');
 
 async function seed() {
   try {
@@ -135,7 +136,7 @@ async function seed() {
     for (let day = 0; day < 5; day++) {
       const date = new Date();
       date.setDate(date.getDate() + day);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(date);
 
       doctors.forEach((doc) => {
         timeSlots.forEach((t, i) => {
