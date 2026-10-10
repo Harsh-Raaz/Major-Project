@@ -5,7 +5,7 @@ const Slot = require('../models/Slot');
 const Doctor = require('../models/Doctor');
 const Waitlist = require('../models/Waitlist');
 const { getLocalDateString } = require('../utils/date');
-const { recalculateSlotQueue } = require('../services/queueService');
+const { calculateSlotQueue, recalculateSlotQueue } = require('../services/queueService');
 
 function updatePatientQueue(io, appointment, reason, slotIds = [appointment.slot_id]) {
   Promise.all([...new Set(slotIds.map(String))].map((slotId) =>
@@ -106,8 +106,6 @@ async function createAppointment({ patient_id, doctor_id, slot_id, hospital_id, 
     return { error: 'mismatch', message: 'Selected slot does not belong to this hospital' };
   }
 
-  const patientsAhead = slotCheck.current_bookings;
-
   const slot = await Slot.findOneAndUpdate(
     { _id: slot_id, $expr: { $lt: ['$current_bookings', '$capacity'] } },
     { $inc: { current_bookings: 1 } },
@@ -127,8 +125,6 @@ async function createAppointment({ patient_id, doctor_id, slot_id, hospital_id, 
     return { error: 'not_found', message: 'Doctor not found' };
   }
 
-  const estimatedWait = calculateWaitTime(patientsAhead, doctor.avg_consultation_mins);
-
   updateSlotStatus(slot);
   await slot.save();
 
@@ -143,12 +139,21 @@ async function createAppointment({ patient_id, doctor_id, slot_id, hospital_id, 
     hospital_id,
     department,
     symptoms,
-    priority: normalizePriority(priority),
-    estimated_wait_mins: estimatedWait
+    priority: normalizePriority(priority)
   });
   await appointment.save();
 
-  return { appointment, estimated_wait_mins: estimatedWait };
+  const queue = await calculateSlotQueue(slot_id);
+  const queueEntry = queue.find(({ appointment: queued }) =>
+    String(queued._id) === String(appointment._id)
+  );
+  if (queueEntry) {
+    appointment.queue_position = queueEntry.queue_position;
+    appointment.estimated_wait_mins = queueEntry.estimated_wait_mins;
+    await appointment.save();
+  }
+
+  return { appointment, estimated_wait_mins: appointment.estimated_wait_mins };
 }
 
 router.post('/', async (req, res) => {

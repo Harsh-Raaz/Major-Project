@@ -6,27 +6,35 @@ const Doctor = require('../models/Doctor');
 const pendingQueues = new Map();
 const priorityOrder = { emergency: 0, urgent: 1, normal: 2 };
 
+async function calculateSlotQueue(slotId) {
+  const slot = await Slot.findById(slotId).select('doctor_id');
+  if (!slot) return [];
+  const doctor = await Doctor.findById(slot.doctor_id).select('avg_consultation_mins');
+  const consultationMins = doctor?.avg_consultation_mins || 15;
+  const appointments = await Appointment.find({
+    slot_id: slotId,
+    status: { $in: ['confirmed', 'rescheduled'] }
+  }).sort({ createdAt: 1, _id: 1 });
+  appointments.sort((a, b) =>
+    (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2)
+  );
+
+  return appointments.map((appointment, index) => ({
+    appointment,
+    queue_position: index + 1,
+    estimated_wait_mins: index * consultationMins
+  }));
+}
+
 async function recalculateSlotQueue(slotId, io, { reason, excludePatientId } = {}) {
   const key = String(slotId);
   // Serialize recalculations for a slot so overlapping requests cannot overwrite newer results.
   const previous = pendingQueues.get(key) || Promise.resolve();
   const task = previous.then(async () => {
     try {
-      const slot = await Slot.findById(slotId).select('doctor_id');
-      if (!slot) return;
-      const doctor = await Doctor.findById(slot.doctor_id).select('avg_consultation_mins');
-      const consultationMins = doctor?.avg_consultation_mins || 15;
-      const appointments = await Appointment.find({
-        slot_id: slotId,
-        status: { $in: ['confirmed', 'rescheduled'] }
-      }).sort({ createdAt: 1, _id: 1 });
-      appointments.sort((a, b) =>
-        (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2)
-      );
+      const queue = await calculateSlotQueue(slotId);
 
-      for (const [index, appointment] of appointments.entries()) {
-        const queue_position = index + 1;
-        const estimated_wait_mins = index * consultationMins;
+      for (const { appointment, queue_position, estimated_wait_mins } of queue) {
         const oldWait = appointment.estimated_wait_mins;
         if (appointment.queue_position === queue_position && oldWait === estimated_wait_mins) continue;
 
@@ -72,4 +80,4 @@ async function recalculateSlotQueue(slotId, io, { reason, excludePatientId } = {
   }
 }
 
-module.exports = { recalculateSlotQueue };
+module.exports = { calculateSlotQueue, recalculateSlotQueue };
