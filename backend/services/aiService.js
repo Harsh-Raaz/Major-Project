@@ -126,7 +126,17 @@ async function predictNoShow(data) {
   }
 }
 
+async function detectHealthTrend(series, month) {
+  try {
+    const res = await axios.post(`${AI_SERVICE_URL}/detect-health-trend`, { series, month }, { timeout: 10000 });
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
+  detectHealthTrend,
   suggestDepartment,
   recommendHospitals,
   recommendDoctors,

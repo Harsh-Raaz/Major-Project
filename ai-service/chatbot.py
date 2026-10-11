@@ -615,5 +615,6 @@ def handle_chat_message(session_id, message):
         "signals_collected": session["signals"],
         "seasonal_alert": seasonal_alert,
         "response_type": "triage_complete",
+        "matched_keywords": result.get("matched_keywords", []),
         "session_id": session_id,
     }

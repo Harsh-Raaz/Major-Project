@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { LogOut, User, BarChart3 } from "lucide-react";
+import { useHealthAlertSummary } from "../hooks/useHealthAlertSummary";
 
 const navLinkClass = ({ isActive }) =>
   `relative pb-1 text-sm font-medium transition ${
@@ -10,6 +11,7 @@ const navLinkClass = ({ isActive }) =>
 export default function Navbar() {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { alert, newsItem } = useHealthAlertSummary();
 
   const handleLogout = () => {
     logout();
@@ -54,6 +56,19 @@ export default function Navbar() {
               {({ isActive }) => (
                 <span className="relative">
                   Care Assistant
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-[#00B8A9]" />
+                  )}
+                </span>
+              )}
+            </NavLink>
+            <NavLink to="/health-alerts" className={navLinkClass}>
+              {({ isActive }) => (
+                <span className="relative">
+                  Health Alerts
+                  {(alert || newsItem) && (
+                    <span role="img" aria-label="New health alerts" className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0A1628]" />
+                  )}
                   {isActive && (
                     <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-[#00B8A9]" />
                   )}

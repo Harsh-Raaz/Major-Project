@@ -133,6 +133,8 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/health-trends', require('./routes/healthTrends'));
+app.use('/api/health-alerts', require('./routes/healthAlerts'));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {

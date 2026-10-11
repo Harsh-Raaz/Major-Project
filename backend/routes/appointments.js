@@ -6,6 +6,7 @@ const Doctor = require('../models/Doctor');
 const Waitlist = require('../models/Waitlist');
 const { getLocalDateString } = require('../utils/date');
 const { calculateSlotQueue, recalculateSlotQueue } = require('../services/queueService');
+const { invalidateHealthTrends } = require('../services/healthTrendsService');
 
 function updatePatientQueue(io, appointment, reason, slotIds = [appointment.slot_id]) {
   Promise.all([...new Set(slotIds.map(String))].map((slotId) =>
@@ -51,6 +52,7 @@ async function emitSlotUpdate(io, slotId) {
         capacity: slot.capacity,
         status: slot.status
       });
+      invalidateHealthTrends(io);
     }
   } catch (err) {
     console.error('Failed to broadcast slot update:', err.message);

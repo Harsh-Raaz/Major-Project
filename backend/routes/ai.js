@@ -6,6 +6,8 @@ const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
 const { createAppointment, emitSlotUpdate, updatePatientQueue } = require('./appointments');
 const Patient = require('../models/Patient');
+const SymptomLog = require('../models/SymptomLog');
+const { invalidateHealthTrends } = require('../services/healthTrendsService');
 const { getLocalDateString } = require('../utils/date');
 const {
   suggestDepartment,
@@ -17,6 +19,19 @@ const {
   resetChatbotSession
 } = require('../services/aiService');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
+
+function logSymptomSearch(result, source, io) {
+  Promise.resolve().then(async () => {
+    if (!result?.department) return;
+    const matches = Array.isArray(result.matched_keywords) ? result.matched_keywords : [];
+    const keywords = [...new Set(matches.filter((keyword) => typeof keyword === 'string')
+      .map((keyword) => keyword.toLowerCase()))];
+    // Only canonical classifier matches are stored; never persist the submitted text or identity.
+    await SymptomLog.create({ department: result.department, keywords, source });
+    invalidateHealthTrends(io);
+  })
+    .catch((error) => console.error('Symptom logging failed:', error.message));
+}
 
 async function getScoredHospitalsForDepartment(department, patientLat, patientLng) {
   const query = { is_active: true };
@@ -107,6 +122,7 @@ router.post('/suggest-department', async (req, res) => {
     if (result === null) {
       return res.status(500).json({ message: 'AI service unavailable' });
     }
+    logSymptomSearch(result, 'home', req.app.get('io'));
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -234,6 +250,10 @@ router.post('/chatbot/message', async (req, res) => {
         seasonal_alert: null,
         session_id: result.session_id || session_id || null
       });
+    }
+
+    if (result.response_type === 'triage_complete') {
+      logSymptomSearch(result, 'chatbot', req.app.get('io'));
     }
 
     const shouldShowHospitals =

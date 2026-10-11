@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Home from "./pages/Home";
+import HealthAlerts from "./pages/HealthAlerts";
 import Hospitals from "./pages/Hospitals";
 import Doctors from "./pages/Doctors";
 import Slots from "./pages/Slots";
@@ -30,6 +31,7 @@ export default function RootApp() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/chatbot" element={<Chatbot />} />
+        <Route path="/health-alerts" element={<HealthAlerts />} />
         <Route path="/doctors/:id" element={<Doctors />} />
         <Route path="/slots/:id" element={<Slots />} />
         <Route path="/route/:id" element={<RoutePage />} />

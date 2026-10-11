@@ -114,6 +114,7 @@ def suggest_department(symptoms_text, month=None):
             "department": "General Medicine",
             "confidence": "low",
             "all_matches": [],
+            "matched_keywords": [],
             "seasonal_alert": None,
         }
 
@@ -135,6 +136,7 @@ def suggest_department(symptoms_text, month=None):
             "department": "General Medicine",
             "confidence": "low",
             "all_matches": ["General Medicine"],
+            "matched_keywords": [],
             "seasonal_alert": None,
         }
 
@@ -184,5 +186,6 @@ def suggest_department(symptoms_text, month=None):
         "department": top_dept,
         "confidence": confidence,
         "all_matches": sorted_depts[:3],
+        "matched_keywords": [kw for kw in SYMPTOM_MAP[top_dept] if kw in text],
         "seasonal_alert": seasonal_alert,
     }

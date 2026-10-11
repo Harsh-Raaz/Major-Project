@@ -45,6 +45,26 @@ body {
   animation: pulse 3s infinite;
 }
 
+.cc-health-alert {
+  animation: cc-health-alert-in 0.4s ease-out both;
+}
+
+.cc-health-alert-live {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes cc-health-alert-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-health-alert,
+  .cc-health-alert-live {
+    animation: none;
+  }
+}
+
 .cc-surface {
   border: 1px solid var(--cc-line);
   border-radius: 16px;

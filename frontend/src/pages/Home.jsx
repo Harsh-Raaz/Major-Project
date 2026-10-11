@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AppLayout from "../layouts/AppLayout";
 import AlertBox from "../components/AlertBox";
-import Loader from "../components/Loader";
+import CommunityHealthAlert from "../components/CommunityHealthAlert";
 import { suggestDepartment, classifyPriority } from "../api/ai";
 
 export default function Home() {
@@ -12,7 +12,6 @@ export default function Home() {
   const [symptoms, setSymptoms] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-
   const onSearch = async () => {
     if (!symptoms.trim()) return toast.error("Please enter symptoms");
     setLoading(true);
@@ -68,6 +67,7 @@ export default function Home() {
 
   return (
     <AppLayout>
+      <CommunityHealthAlert />
       <section className="cc-hero-grid relative overflow-hidden rounded-[32px] px-6 py-12 text-white shadow-[0_30px_80px_rgba(10,22,40,0.28)] md:px-10 md:py-16">
         <div className="absolute inset-0 opacity-30">
           <svg className="h-full w-full" viewBox="0 0 1200 600" preserveAspectRatio="none">
