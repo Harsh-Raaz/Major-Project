@@ -4,10 +4,11 @@ const router = express.Router();
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
+const { getLocalDateString } = require('../utils/date');
 
 router.get('/dashboard', async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const todayStart = new Date(today);
 
     const total_bookings = await Appointment.countDocuments({

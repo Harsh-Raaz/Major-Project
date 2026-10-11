@@ -4,8 +4,11 @@ const axios = require('axios');
 const Hospital = require('../models/Hospital');
 const Doctor = require('../models/Doctor');
 const Slot = require('../models/Slot');
-const { createAppointment } = require('./appointments');
+const { createAppointment, emitSlotUpdate, updatePatientQueue } = require('./appointments');
 const Patient = require('../models/Patient');
+const SymptomLog = require('../models/SymptomLog');
+const { invalidateHealthTrends } = require('../services/healthTrendsService');
+const { getLocalDateString } = require('../utils/date');
 const {
   suggestDepartment,
   recommendHospitals,
@@ -17,13 +20,26 @@ const {
 } = require('../services/aiService');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 
+function logSymptomSearch(result, source, io) {
+  Promise.resolve().then(async () => {
+    if (!result?.department) return;
+    const matches = Array.isArray(result.matched_keywords) ? result.matched_keywords : [];
+    const keywords = [...new Set(matches.filter((keyword) => typeof keyword === 'string')
+      .map((keyword) => keyword.toLowerCase()))];
+    // Only canonical classifier matches are stored; never persist the submitted text or identity.
+    await SymptomLog.create({ department: result.department, keywords, source });
+    invalidateHealthTrends(io);
+  })
+    .catch((error) => console.error('Symptom logging failed:', error.message));
+}
+
 async function getScoredHospitalsForDepartment(department, patientLat, patientLng) {
   const query = { is_active: true };
   if (department) {
     query.departments = department;
   }
   const hospitals = await Hospital.find(query);
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const Appointment = require('../models/Appointment');
 
   const hospitalData = await Promise.all(
@@ -106,6 +122,7 @@ router.post('/suggest-department', async (req, res) => {
     if (result === null) {
       return res.status(500).json({ message: 'AI service unavailable' });
     }
+    logSymptomSearch(result, 'home', req.app.get('io'));
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -233,6 +250,10 @@ router.post('/chatbot/message', async (req, res) => {
         seasonal_alert: null,
         session_id: result.session_id || session_id || null
       });
+    }
+
+    if (result.response_type === 'triage_complete') {
+      logSymptomSearch(result, 'chatbot', req.app.get('io'));
     }
 
     const shouldShowHospitals =
@@ -397,16 +418,18 @@ router.post('/chatbot/booking-message', async (req, res) => {
       booking.selected_doctor = chosen;
 
       const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const today = getLocalDateString(now);
       const currentTime = now.toTimeString().slice(0, 5);
       const slots = await Slot.find({
         doctor_id: chosen._id,
-        date: { $gte: today },
+        $or: [
+          { date: { $gt: today } },
+          { date: today, start_time: { $gt: currentTime } }
+        ],
         status: { $ne: 'full' }
-      }).sort({ date: 1, start_time: 1 });
-      const upcomingSlots = slots.filter((slot) => slot.date > today || slot.start_time > currentTime);
+      }).sort({ date: 1, start_time: 1 }).limit(6);
 
-      if (!upcomingSlots.length) {
+      if (!slots.length) {
         _resetBookingSession(session_id);
         return res.json({
           reply: `No upcoming slots for ${chosen.name}. Please try a different doctor by starting again.`,
@@ -416,7 +439,7 @@ router.post('/chatbot/booking-message', async (req, res) => {
       }
 
       booking.stage = 'choose_slot';
-      booking.slots = upcomingSlots.slice(0, 6);
+      booking.slots = slots;
       return res.json({
         reply: `You chose ${chosen.name}. Here are upcoming slots:\n\n${_formatSlotList(booking.slots)}`,
         stage: booking.stage,
@@ -480,6 +503,9 @@ router.post('/chatbot/booking-message', async (req, res) => {
           session_id
         });
       }
+
+      await emitSlotUpdate(req.app.get('io'), result.appointment.slot_id);
+      updatePatientQueue(req.app.get('io'), result.appointment, 'booking');
 
       _resetBookingSession(session_id);
       return res.json({

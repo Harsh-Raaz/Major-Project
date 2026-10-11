@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Doctor = require('./models/Doctor');
 const Slot = require('./models/Slot');
+const { getLocalDateString: localDate } = require('./utils/date');
 
 const timeSlots = [
   { start: '09:00', end: '10:00' },
@@ -17,45 +18,58 @@ const timeSlots = [
   { start: '19:00', end: '20:00' }
 ];
 
-function formatDate(date) {
-  return date.toISOString().slice(0, 10);
-}
-
 async function run() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log('Connected. Fetching doctors...');
 
   const doctors = await Doctor.find({});
-  console.log(`Found ${doctors.length} doctors. Seeding slots for today only...`);
+  console.log(`Found ${doctors.length} doctors. Seeding slots for today plus the next 7 days...`);
 
-  const today = formatDate(new Date());
+  const today = new Date();
+  const dates = Array.from({ length: 8 }, (_, offset) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + offset);
+    return localDate(date);
+  });
+  const counts = new Map(dates.map((date) => [date, { created: 0, skipped: 0 }]));
   let createdCount = 0;
   let doctorIndex = 0;
 
   for (const doctor of doctors) {
     doctorIndex += 1;
-    for (const { start, end } of timeSlots) {
-      const exists = await Slot.findOne({ doctor_id: doctor._id, date: today, start_time: start });
-      if (exists) continue;
-      await Slot.create({
-        doctor_id: doctor._id,
-        hospital_id: doctor.hospital_id,
-        date: today,
-        start_time: start,
-        end_time: end,
-        capacity: 5,
-        current_bookings: 0,
-        status: 'available',
-        duration_mins: 60
-      });
-      createdCount += 1;
-    }
+    // Process one doctor's eight dates together to avoid serial database round trips.
+    await Promise.all(dates.map(async (date) => {
+      const dateCounts = counts.get(date);
+      await Promise.all(timeSlots.map(async ({ start, end }) => {
+        const exists = await Slot.findOne({ doctor_id: doctor._id, date, start_time: start });
+        if (exists) {
+          dateCounts.skipped += 1;
+          return;
+        }
+        await Slot.create({
+          doctor_id: doctor._id,
+          hospital_id: doctor.hospital_id,
+          date,
+          start_time: start,
+          end_time: end,
+          capacity: 5,
+          current_bookings: 0,
+          status: 'available',
+          duration_mins: 60
+        });
+        createdCount += 1;
+        dateCounts.created += 1;
+      }));
+    }));
     if (doctorIndex % 20 === 0) {
       console.log(`Processed ${doctorIndex}/${doctors.length} doctors, ${createdCount} slots created so far...`);
     }
   }
 
-  console.log(`Done. Created ${createdCount} slots for ${today}.`);
+  for (const [date, { created, skipped }] of counts) {
+    console.log(`${date}: created ${created}, skipped ${skipped}`);
+  }
+  console.log(`Done. Created ${createdCount} slots across ${dates.length} dates.`);
   process.exit(0);
 }
 

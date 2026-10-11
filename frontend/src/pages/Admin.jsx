@@ -11,6 +11,7 @@ import {
 import AppLayout from '../layouts/AppLayout';
 import Loader from '../components/Loader';
 import StatsCard from '../components/StatsCard';
+import HealthTrendsPanel from '../components/HealthTrendsPanel';
 import {
   getAdminAlerts,
   getAdminDashboard,
@@ -360,6 +361,8 @@ export default function Admin() {
           </div>
         ))}
       </section>
+
+      <HealthTrendsPanel />
 
       <div className="cc-surface p-6 mt-6">
         <p className="cc-eyebrow">Seasonal Disease Calendar</p>

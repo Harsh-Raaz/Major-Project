@@ -19,6 +19,7 @@ from recommender import recommend_doctors, recommend_hospitals
 from seasonal import get_seasonal_alert, get_full_seasonal_calendar
 from symptom_classifier import suggest_department
 from wait_time import estimate_wait
+from health_trends import detect_trends
 
 app = Flask(__name__)
 CORS(app)
@@ -72,6 +73,17 @@ def department_suggestion():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/detect-health-trend", methods=["POST"])
+def health_trend_detection():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"message": "Expected a JSON object with series and month"}), 400
+    try:
+        return jsonify(detect_trends(data.get("series"), data.get("month")))
+    except ValueError as error:
+        return jsonify({"message": str(error)}), 400
 
 
 @app.route("/seasonal-alert", methods=["POST"])

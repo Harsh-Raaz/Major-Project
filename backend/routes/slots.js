@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Slot = require('../models/Slot');
 const Doctor = require('../models/Doctor');
+const { getLocalDateString } = require('../utils/date');
 
 const DEFAULT_TIME_SLOTS = [
   { start: '09:00', end: '10:00' },
@@ -18,7 +19,7 @@ const DEFAULT_TIME_SLOTS = [
 ];
 
 function isTodayOrFuture(dateStr) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateString();
   return dateStr >= today;
 }
 

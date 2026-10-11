@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Hospital = require('../models/Hospital');
+const { getLocalDateString } = require('../utils/date');
 
 router.get('/', async (req, res) => {
   try {
@@ -16,7 +17,7 @@ router.post('/compare', async (req, res) => {
     const Slot = require('../models/Slot');
     const Doctor = require('../models/Doctor');
     const { hospital_ids: hospitalIds, patient_lat, patient_lng } = req.body;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const results = await Promise.all(
       (hospitalIds || []).map(async (hospitalId) => {
